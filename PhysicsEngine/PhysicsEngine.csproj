@@ -1,0 +1,88 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  
+  <Import Project="..\..\..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Common.props" Condition="Exists('..\..\..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Common.props')" />
+  
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <MGCBCommand>mgcb</MGCBCommand>
+    <MonoGamePlatform>Windows</MonoGamePlatform>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <MonoGameContentReference Include="Content/Content.$(MonoGamePlatform).mgcb" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Framework\MonoGame.Framework.Windows.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\MonoGame.Framework.dll.config">
+      <Platforms>WindowsGL,Linux,MacOS</Platforms>
+      <Link>MonoGame.Framework.dll.config</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <!--
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\SDL\Windows\x86\SDL2.dll">
+      <Platforms>WindowsGL,Linux</Platforms>
+      <Link>x86\SDL2.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\SDL\Windows\x64\SDL2.dll">
+      <Platforms>WindowsGL,Linux</Platforms>
+      <Link>x64\SDL2.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    -->
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\openal-soft\Windows\x86\soft_oal.dll">
+      <Platforms>Windows,WindowsGL,Linux</Platforms>
+      <Link>x86\soft_oal.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\openal-soft\Windows\x64\soft_oal.dll">
+      <Platforms>Windows,WindowsGL,Linux</Platforms>
+      <Link>x64\soft_oal.dll</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    
+    <!--
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\SDL\Linux\x64\libSDL2-2.0.so.0">
+      <Platforms>Windows,WindowsGL,Linux</Platforms>
+      <Link>x64\libSDL2-2.0.so.0</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    -->
+
+    <!--
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\openal-soft\Linux\x86\libopenal.so.1">
+      <Platforms>WindowsGL,Linux</Platforms>
+      <Link>x86\libopenal.so.1</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\openal-soft\Linux\x64\libopenal.so.1">
+      <Platforms>WindowsGL,Linux</Platforms>
+      <Link>x64\libopenal.so.1</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\SDL\MacOS\Universal\libSDL2-2.0.0.dylib">
+      <Platforms>WindowsGL,Linux,MacOS</Platforms>
+      <Link>libSDL2-2.0.0.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\Dependencies\openal-soft\MacOS\Universal\libopenal.1.dylib">
+      <Platforms>WindowsGL,Linux,MacOS</Platforms>
+      <Link>libopenal.1.dylib</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    -->
+  </ItemGroup>
+  
+  <ItemGroup>
+    <TrimmerRootAssembly Include="MonoGame.Framework.Content.ContentTypeReader" Visible="false" />
+  </ItemGroup>
+  
+  <Import Project="..\..\..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Content.Builder.targets" Condition="Exists('..\..\..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Content.Builder.targets')" />
+
+</Project>

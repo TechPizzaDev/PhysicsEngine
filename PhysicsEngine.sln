@@ -1,0 +1,64 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.3.32825.248
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhysicsEngine", "PhysicsEngine\PhysicsEngine.csproj", "{44E166E0-6298-4A61-A18E-5E284C3DAE13}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MonoGame", "MonoGame", "{0A75C98F-6B21-41BC-8B68-A2B686EC1298}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Imaging", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Imaging\MonoGame.Imaging.csproj", "{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Utilities", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Utilities\MonoGame.Utilities.csproj", "{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NVorbis", "..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\VorbisPizza\NVorbis\NVorbis.csproj", "{CA9D04FC-6800-40F4-869D-673D1D35936F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.StbSharp", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.StbSharp\MonoGame.StbSharp.csproj", "{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Framework.Windows", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Framework\MonoGame.Framework.Windows.csproj", "{C5A62806-2AB0-4531-89B3-1AC11039D28A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{44E166E0-6298-4A61-A18E-5E284C3DAE13}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{44E166E0-6298-4A61-A18E-5E284C3DAE13}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{44E166E0-6298-4A61-A18E-5E284C3DAE13}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{44E166E0-6298-4A61-A18E-5E284C3DAE13}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CA9D04FC-6800-40F4-869D-673D1D35936F}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{CA9D04FC-6800-40F4-869D-673D1D35936F}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{CA9D04FC-6800-40F4-869D-673D1D35936F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CA9D04FC-6800-40F4-869D-673D1D35936F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C5A62806-2AB0-4531-89B3-1AC11039D28A}.Debug|Any CPU.ActiveCfg = Release|Any CPU
+		{C5A62806-2AB0-4531-89B3-1AC11039D28A}.Debug|Any CPU.Build.0 = Release|Any CPU
+		{C5A62806-2AB0-4531-89B3-1AC11039D28A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C5A62806-2AB0-4531-89B3-1AC11039D28A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{5879FAD2-0A3A-432B-BF26-799AF0FD42BF} = {0A75C98F-6B21-41BC-8B68-A2B686EC1298}
+		{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03} = {0A75C98F-6B21-41BC-8B68-A2B686EC1298}
+		{CA9D04FC-6800-40F4-869D-673D1D35936F} = {0A75C98F-6B21-41BC-8B68-A2B686EC1298}
+		{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F} = {0A75C98F-6B21-41BC-8B68-A2B686EC1298}
+		{C5A62806-2AB0-4531-89B3-1AC11039D28A} = {0A75C98F-6B21-41BC-8B68-A2B686EC1298}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8E7112B9-4C0B-49B1-B8C9-5BFCD2A3B4ED}
+	EndGlobalSection
+EndGlobal
