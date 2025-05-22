@@ -13,10 +13,12 @@ namespace PhysicsEngine
         public bool DrawDebugInfo = true;
 
         public float MinZoom = 0.125f;
-        public float MaxZoom = 2f;
+        public float MaxZoom = 4f;
 
         private GraphicsDeviceManager _graphicsManager;
         private SpriteBatch _spriteBatch;
+
+        private ImGuiRenderer _imguiRenderer;
 
         private StringBuilder _debugBuilder = new();
 
@@ -25,7 +27,7 @@ namespace PhysicsEngine
         private float _backgroundRenderScale = 0.333f;
         private RenderTarget2D _backgroundTarget;
 
-        private float _sceneRenderScale = 1f;
+        private float _sceneRenderScale = 2f;
         private RenderTarget2D _sceneTarget;
 
         private float _uiRenderScale = 2f;
@@ -44,12 +46,11 @@ namespace PhysicsEngine
         private Matrix4x4 _sceneRenderMatrix;
         private Matrix4x4 _uiRenderMatrix;
 
-        private Vector2 _cameraTarget;
-        private float _scale = 0.5f;
+        private Vector2 _cameraTarget = new(0, 200);
+        private float _scale = 1.0f;
 
         private Random _worldRng = new(1234);
         public World _world;
-
         public GameFrame()
         {
             SoundEffect.Initialize();
@@ -66,6 +67,9 @@ namespace PhysicsEngine
             IsMouseVisible = true;
 
             base.Initialize();
+
+            _imguiRenderer = new ImGuiRenderer(this);
+            _imguiRenderer.RebuildFontAtlas();
 
             _lastViewport = GraphicsDevice.Viewport;
             ViewportChanged(_lastViewport);
@@ -158,14 +162,18 @@ namespace PhysicsEngine
                 _world = new World(_worldRng);
             }
 
-            if (!_inputState.NewKeyState.IsKeyDown(Keys.F6))
+            if (_inputState.NewKeyState.IsKeyDown(Keys.F6))
             {
                 _world.SpawnCircle();
             }
 
             InputState input = _inputState;
 
+            _imguiRenderer.BeginLayout(input, time, _lastViewport.Bounds.Size.ToVector2(), new Vector2(1));
+
             _world.Update(input, time);
+
+            _imguiRenderer.EndLayout();
 
             _scrollDelta = input.NewMouseState.Scroll - _lastScroll;
             _scrollDelta.X = -_scrollDelta.X;
@@ -238,6 +246,8 @@ namespace PhysicsEngine
             _spriteBatch.Draw(_sceneTarget, currentViewport.Bounds, _sceneTarget.Bounds, Color.White);
             _spriteBatch.Draw(_uiTarget, currentViewport.Bounds, _uiTarget.Bounds, Color.White);
             _spriteBatch.End();
+            
+            _imguiRenderer.Draw();
 
             base.Draw(time);
         }

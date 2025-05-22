@@ -1,5 +1,8 @@
 ﻿using System;
+using System.Globalization;
 using System.Numerics;
+using System.Text;
+using ImGuiNET;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 using PhysicsEngine.Shapes;
@@ -12,10 +15,12 @@ public class World
 
     public Random rng;
 
-    public Vector2 Gravity = new(9.82f, 0);
+    public Double2 Gravity = new(0, 9.82);
 
-    public float TotalTime;
-    public float TimeScale = 1f;
+    public double TotalTime;
+    public double TimeScale = 1f;
+
+    private bool _drawTrails = true;
 
     public World(Random random)
     {
@@ -32,46 +37,94 @@ public class World
         ref Circle circle = ref circles.Add();
         circle = new Circle
         {
-            Position = rng.NextVector2(new Vector2(-1500, -1000), new Vector2(1500, 0)),
             Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
-            Radius = rng.Next(40, 60),
-            trail = new Trail(16),
+            Radius = rng.Next(1, 4),
+            Density = 250f,
+            trail = new Trail(512),
         };
-        circle.Mass = circle.Radius * 0.1f;
+        circle.Transform.Position = rng.NextVector2(new Vector2(-1500, -1000), new Vector2(1500, 0));
+
+        circle.RigidBody.Velocity = new Double2(50, -50);
+
+        circle.CalculateMass();
+
         return ref circle;
     }
 
     public void Update(in InputState input, in FrameTime time)
     {
-        float deltaTime = time.ElapsedTotalSeconds * TimeScale;
-        FixedUpdate(TotalTime, deltaTime);
+        double deltaTime = 1 / 60.0 * TimeScale;
+        FixedUpdate(deltaTime);
         TotalTime += deltaTime;
+
+        ImGui.Begin("World");
+
+        ImGui.Checkbox("Draw Trails", ref _drawTrails);
+
+        ImGui.End();
     }
 
-    public void FixedUpdate(float totalTime, float deltaTime)
+    public void FixedUpdate(double deltaTime)
     {
         foreach (ref Circle circle in circles.AsSpan())
         {
-            circle.Velocity += Gravity * circle.Mass;
-            circle.Position += circle.Velocity * deltaTime;
+            circle.RigidBody.IntegrateForces(Gravity, deltaTime);
+        }
 
-            circle.trail.Update(circle.Position);
+        foreach (ref Circle circle in circles.AsSpan())
+        {
+            circle.RigidBody.IntegrateVelocity(ref circle.Transform, Gravity, deltaTime);
+        }
+
+        if (_drawTrails)
+        {
+            foreach (ref Circle circle in circles.AsSpan())
+            {
+                circle.trail.Update((Vector2) circle.Transform.Position);
+            }
         }
     }
 
     public void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch)
     {
+        float scale = 16;
+
         if (renderPass == RenderPass.Scene)
+        {
+            DrawWorld(assets, spriteBatch, scale);
+        }
+    }
+
+    private void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
+    {
+        foreach (ref Circle circle in circles.AsSpan())
+        {
+            spriteBatch.DrawCircle(
+                (Vector2) circle.Transform.Position,
+                scale * (float) circle.Radius,
+                (int) (scale * Math.Max(8, (float) circle.Radius / 2f)),
+                circle.Color,
+                8f);
+        }
+
+        if (_drawTrails)
         {
             foreach (ref Circle circle in circles.AsSpan())
             {
-                spriteBatch.DrawCircle(circle.Position, circle.Radius, Math.Max(8, (int) (circle.Radius / 2f)), circle.Color, 8f);
+                circle.trail.Draw(spriteBatch, circle.Color, scale * (float) circle.Radius / 2f);
             }
+        }
 
-            foreach (ref Circle circle in circles.AsSpan())
-            {
-                circle.trail.Draw(spriteBatch, circle.Color, circle.Radius / 4f);
-            }
+        StringBuilder builder = new();
+        foreach (ref Circle circle in circles.AsSpan())
+        {
+            builder.Clear();
+            builder.AppendLine(NumberFormatInfo.InvariantInfo, $"P {circle.Transform.Position:0.0}");
+            builder.AppendLine(NumberFormatInfo.InvariantInfo, $"V {circle.RigidBody.Velocity:0.0}");
+
+            spriteBatch.DrawString(
+                assets.Font_Consolas, builder, (Vector2) circle.Transform.Position + new Vector2((float) circle.Radius * scale + 4, -8),
+                circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.None, 0);
         }
     }
 }
