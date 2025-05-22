@@ -158,7 +158,9 @@ public class ImGuiRenderer
 
         _game.Window.TextInput += (s, a) =>
         {
-            if (a.Character == new Rune('\t')) return;
+            if (a.Character == new Rune('\t')) 
+                return;
+
             io.AddInputCharacter((uint) a.Character.Value);
         };
     }

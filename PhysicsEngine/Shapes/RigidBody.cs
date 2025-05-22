@@ -23,24 +23,34 @@ public struct RigidBody
     // x += v * dt
 
     // see http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
-    public void IntegrateForces(Double2 gravity, double dt)
+    public void IntegrateVelocity(Double2 gravity, double dt)
     {
         if (InverseMass == 0.0)
             return;
-         
+
         double halfDt = dt * 0.5;
         Velocity += (Force * InverseMass + gravity) * halfDt;
+    }
+
+    public void IntegrateAngular(double dt)
+    {
+        if (InverseInertia == 0.0)
+            return;
+
+        double halfDt = dt * 0.5;
         AngularVelocity += Torque * InverseInertia * halfDt;
     }
 
     public void IntegrateVelocity(ref Transform transform, Double2 gravity, double dt)
     {
-        if (InverseMass == 0.0)
-            return;
-
+        IntegrateVelocity(gravity, dt);
         transform.Position += Velocity * dt;
+    }
+
+    public void IntegrateAngular(ref Transform transform, double dt)
+    {
+        IntegrateAngular(dt);
         transform.Rotation += AngularVelocity * dt;
-        IntegrateForces(gravity, dt);
     }
 
     public void ApplyForce(Double2 force)
