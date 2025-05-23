@@ -26,8 +26,14 @@ public class World
     private bool _enableAngular = true;
 
     private bool _labelPosition;
-    private bool _labelVelocity;
     private bool _labelAngle;
+    private bool _labelRadius;
+    private bool _labelDensity;
+    private bool _labelVelocity;
+    private bool _labelAngular;
+    private bool _labelMass;
+    private bool _labelInertia;
+    private bool _labelTorque;
 
     private bool _lineTrail = true;
     private bool _lineVelocity = false;
@@ -50,13 +56,15 @@ public class World
         circle = new Circle
         {
             Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
-            Radius = rng.Next(1, 4),
+            Radius = rng.Next(1, 4) / 2.0,
             Density = 250f,
             trail = new Trail(512),
         };
         circle.Transform.Position = rng.NextVector2(new Vector2(-1500, -1000), new Vector2(1500, 0));
 
         circle.RigidBody.Velocity = new Double2(50, -50);
+        circle.RigidBody.AngularVelocity = 8;
+        circle.RigidBody.Torque = -150;
 
         circle.CalculateMass();
 
@@ -95,8 +103,14 @@ public class World
     private void ImGuiLabels()
     {
         ImGui.Checkbox("Position", ref _labelPosition);
-        ImGui.Checkbox("Velocity", ref _labelVelocity);
         ImGui.Checkbox("Angle", ref _labelAngle);
+        ImGui.Checkbox("Radius", ref _labelRadius);
+        ImGui.Checkbox("Density", ref _labelDensity);
+        ImGui.Checkbox("Velocity", ref _labelVelocity);
+        ImGui.Checkbox("Angular", ref _labelAngular);
+        ImGui.Checkbox("Mass", ref _labelMass);
+        ImGui.Checkbox("Inertia", ref _labelInertia);
+        ImGui.Checkbox("Torque", ref _labelTorque);
     }
 
     private void ImGuiLines()
@@ -212,28 +226,38 @@ public class World
             }
         }
 
-        if (_labelPosition || _labelVelocity || _labelAngle)
+        StringBuilder builder = _strBuilder;
+
+        foreach (ref Circle circle in circles.AsSpan())
         {
-            StringBuilder builder = _strBuilder;
+            builder.Clear();
 
-            foreach (ref Circle circle in circles.AsSpan())
-            {
-                builder.Clear();
-                if (_labelPosition)
-                    builder.AppendLine(NumberFormatInfo.InvariantInfo, $"P {circle.Transform.Position:0.0}");
-                if (_labelVelocity)
-                    builder.AppendLine(NumberFormatInfo.InvariantInfo, $"V {circle.RigidBody.Velocity:0.0}");
-                if (_labelAngle)
-                    builder.AppendLine(NumberFormatInfo.InvariantInfo, $"A {circle.Transform.Rotation:0.00}");
+            if (_labelPosition)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"P {circle.Transform.Position:0.0}");
+            if (_labelAngle)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"A {circle.Transform.Rotation:0.00}");
+            if (_labelRadius)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"R {circle.Radius:0.0}");
+            if (_labelDensity)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"D {circle.Density:0.0}");
+            if (_labelVelocity)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"V {circle.RigidBody.Velocity:0.0}");
+            if (_labelAngular)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"S {circle.RigidBody.AngularVelocity:0.00}");
+            if (_labelMass)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"M {1.0 / circle.RigidBody.InverseMass:0.0}");
+            if (_labelInertia)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"I {1.0 / circle.RigidBody.InverseInertia:0.0}");
+            if (_labelTorque)
+                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"T {circle.RigidBody.Torque:0.00}");
 
-                if (builder.Length <= 0)
-                    continue;
+            if (builder.Length <= 0)
+                continue;
 
-                Vector2 origin = (Vector2) circle.Transform.Position;
-                spriteBatch.DrawString(
-                    assets.Font_Consolas, builder, origin + new Vector2((float) circle.Radius * scale + 4, -8),
-                    circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.None, 0);
-            }
+            Vector2 origin = (Vector2) circle.Transform.Position;
+            spriteBatch.DrawString(
+                assets.Font_Consolas, builder, origin + new Vector2((float) circle.Radius * scale + 4, -8),
+                circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.None, 0);
         }
     }
 }
