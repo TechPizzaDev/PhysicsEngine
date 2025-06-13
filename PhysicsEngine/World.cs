@@ -19,6 +19,8 @@ public class World
 
     public Double2 Gravity = new(0, 9.82);
 
+    private Vector2 mousePosition;
+
     public double TotalTime;
     public double TimeScale = 1f;
 
@@ -71,8 +73,10 @@ public class World
         return ref circle;
     }
 
-    public void Update(in InputState input, in FrameTime time)
+    public void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransformMatrix)
     {
+        mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransformMatrix);
+
         double deltaTime = 1 / 60.0 * TimeScale;
         FixedUpdate(deltaTime);
         TotalTime += deltaTime;

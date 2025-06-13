@@ -43,6 +43,7 @@ namespace PhysicsEngine
 
         private Matrix4x4 _playerMatrix;
         private Matrix4x4 _sceneTransformMatrix;
+        private Matrix4x4 _inverseSceneTransformMatrix;
         private Matrix4x4 _sceneRenderMatrix;
         private Matrix4x4 _uiRenderMatrix;
 
@@ -51,6 +52,7 @@ namespace PhysicsEngine
 
         private Random _worldRng = new(1234);
         public World _world;
+
         public GameFrame()
         {
             SoundEffect.Initialize();
@@ -169,12 +171,6 @@ namespace PhysicsEngine
 
             InputState input = _inputState;
 
-            _imguiRenderer.BeginLayout(input, time, _lastViewport.Bounds.Size.ToVector2(), new Vector2(1));
-
-            _world.Update(input, time);
-
-            _imguiRenderer.EndLayout();
-
             _scrollDelta = input.NewMouseState.Scroll - _lastScroll;
             _scrollDelta.X = -_scrollDelta.X;
             _lastScroll = input.NewMouseState.Scroll;
@@ -205,18 +201,20 @@ namespace PhysicsEngine
                 Matrix4x4.CreateTranslation(_lastViewport.Width / 2f, _lastViewport.Height / 2f, 0);
 
             _sceneRenderMatrix =
-                _playerMatrix *
-                Matrix4x4.CreateScale(_sceneRenderScale) *
-                Matrix4x4.CreateTranslation(_lastViewport.Width / 2f * _sceneRenderScale, _lastViewport.Height / 2f * _sceneRenderScale, 0);
+                _sceneTransformMatrix *
+                Matrix4x4.CreateScale(_sceneRenderScale);
 
             _uiRenderMatrix =
-                _playerMatrix *
-                Matrix4x4.CreateScale(_uiRenderScale) *
-                Matrix4x4.CreateTranslation(_lastViewport.Width / 2f * _uiRenderScale, _lastViewport.Height / 2f * _uiRenderScale, 0);
+                _sceneTransformMatrix *
+                Matrix4x4.CreateScale(_uiRenderScale);
 
-            Matrix4x4.Invert(_sceneTransformMatrix, out Matrix4x4 invertedPlayerMatrix);
+            Matrix4x4.Invert(_sceneTransformMatrix, out _inverseSceneTransformMatrix);
 
-            Vector2 mouseInWorld = Vector2.Transform(_lastMousePos, invertedPlayerMatrix);
+            _imguiRenderer.BeginLayout(input, time, _lastViewport.Bounds.Size.ToVector2(), new Vector2(1));
+
+            _world.Update(input, time, _inverseSceneTransformMatrix);
+
+            _imguiRenderer.EndLayout();
 
             base.Update(time);
         }
@@ -246,7 +244,7 @@ namespace PhysicsEngine
             _spriteBatch.Draw(_sceneTarget, currentViewport.Bounds, _sceneTarget.Bounds, Color.White);
             _spriteBatch.Draw(_uiTarget, currentViewport.Bounds, _uiTarget.Bounds, Color.White);
             _spriteBatch.End();
-            
+
             _imguiRenderer.Draw();
 
             base.Draw(time);
