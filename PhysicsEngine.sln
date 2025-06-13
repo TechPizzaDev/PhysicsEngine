@@ -7,15 +7,15 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PhysicsEngine", "PhysicsEng
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "MonoGame", "MonoGame", "{0A75C98F-6B21-41BC-8B68-A2B686EC1298}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Imaging", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Imaging\MonoGame.Imaging.csproj", "{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Imaging", "..\MonoGame\MonoGame.Imaging\MonoGame.Imaging.csproj", "{5879FAD2-0A3A-432B-BF26-799AF0FD42BF}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Utilities", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Utilities\MonoGame.Utilities.csproj", "{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Utilities", "..\MonoGame\MonoGame.Utilities\MonoGame.Utilities.csproj", "{40D1F3C9-313F-4D16-A5C5-F336CDD3CB03}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NVorbis", "..\..\Repos\TechPizzaDev\MonoGame\ThirdParty\VorbisPizza\NVorbis\NVorbis.csproj", "{CA9D04FC-6800-40F4-869D-673D1D35936F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NVorbis", "..\MonoGame\ThirdParty\VorbisPizza\NVorbis\NVorbis.csproj", "{CA9D04FC-6800-40F4-869D-673D1D35936F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.StbSharp", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.StbSharp\MonoGame.StbSharp.csproj", "{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.StbSharp", "..\MonoGame\MonoGame.StbSharp\MonoGame.StbSharp.csproj", "{BD943A8C-2AD6-4713-A590-CDBEA9D9EA5F}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Framework.Windows", "..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Framework\MonoGame.Framework.Windows.csproj", "{C5A62806-2AB0-4531-89B3-1AC11039D28A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonoGame.Framework.Windows", "..\MonoGame\MonoGame.Framework\MonoGame.Framework.Windows.csproj", "{C5A62806-2AB0-4531-89B3-1AC11039D28A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
