@@ -3,7 +3,7 @@ using MonoGame.Framework;
 
 namespace PhysicsEngine.Shapes;
 
-public struct Circle
+public struct CircleBody
 {
     public Transform Transform;
     public RigidBody RigidBody;

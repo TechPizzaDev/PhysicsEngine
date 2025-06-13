@@ -11,7 +11,7 @@ namespace PhysicsEngine;
 
 public class World
 {
-    public Storage<Circle> circles = new(1024);
+    public Storage<CircleBody> circles = new(1024);
 
     public Random rng;
 
@@ -50,10 +50,10 @@ public class World
         }
     }
 
-    public ref Circle SpawnCircle()
+    public ref CircleBody SpawnCircle()
     {
-        ref Circle circle = ref circles.Add();
-        circle = new Circle
+        ref CircleBody circle = ref circles.Add();
+        circle = new CircleBody
         {
             Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
             Radius = rng.Next(1, 4) / 2.0,
@@ -123,7 +123,7 @@ public class World
 
     public void FixedUpdate(double deltaTime)
     {
-        foreach (ref Circle circle in circles.AsSpan())
+        foreach (ref CircleBody circle in circles.AsSpan())
         {
             if (_enableVelocity)
                 circle.RigidBody.IntegrateVelocity(Gravity, deltaTime);
@@ -132,7 +132,7 @@ public class World
                 circle.RigidBody.IntegrateAngular(deltaTime);
         }
 
-        foreach (ref Circle circle in circles.AsSpan())
+        foreach (ref CircleBody circle in circles.AsSpan())
         {
             if (_enableVelocity)
                 circle.RigidBody.IntegrateVelocity(ref circle.Transform, Gravity, deltaTime);
@@ -143,7 +143,7 @@ public class World
 
         if (_lineTrail)
         {
-            foreach (ref Circle circle in circles.AsSpan())
+            foreach (ref CircleBody circle in circles.AsSpan())
             {
                 circle.trail.Update((Vector2) circle.Transform.Position);
             }
@@ -162,7 +162,7 @@ public class World
 
     private void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
-        foreach (ref Circle circle in circles.AsSpan())
+        foreach (ref CircleBody circle in circles.AsSpan())
         {
             spriteBatch.DrawCircle(
                 (Vector2) circle.Transform.Position,
@@ -174,7 +174,7 @@ public class World
 
         if (_lineTrail)
         {
-            foreach (ref Circle circle in circles.AsSpan())
+            foreach (ref CircleBody circle in circles.AsSpan())
             {
                 circle.trail.Draw(spriteBatch, circle.Color, scale * (float) circle.Radius / 2f);
             }
@@ -182,7 +182,7 @@ public class World
 
         if (_lineAngle)
         {
-            foreach (ref Circle circle in circles.AsSpan())
+            foreach (ref CircleBody circle in circles.AsSpan())
             {
                 Vector2 origin = (Vector2) circle.Transform.Position;
 
@@ -199,7 +199,7 @@ public class World
 
         if (_lineForward)
         {
-            foreach (ref Circle circle in circles.AsSpan())
+            foreach (ref CircleBody circle in circles.AsSpan())
             {
                 Vector2 origin = (Vector2) circle.Transform.Position;
                 Vector2 velocity = (Vector2) circle.RigidBody.Velocity;
@@ -218,7 +218,7 @@ public class World
 
         if (_lineVelocity)
         {
-            foreach (ref Circle circle in circles.AsSpan())
+            foreach (ref CircleBody circle in circles.AsSpan())
             {
                 Vector2 origin = (Vector2) circle.Transform.Position;
                 Vector2 end = (Vector2) circle.RigidBody.Velocity;
@@ -228,7 +228,7 @@ public class World
 
         StringBuilder builder = _strBuilder;
 
-        foreach (ref Circle circle in circles.AsSpan())
+        foreach (ref CircleBody circle in circles.AsSpan())
         {
             builder.Clear();
 
