@@ -3,10 +3,10 @@ using MonoGame.Framework;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody
+public struct CircleBody : ITransform2D, IRigidBody2D
 {
-    public Transform Transform;
-    public RigidBody RigidBody;
+    public Transform2D Transform;
+    public RigidBody2D RigidBody;
 
     public double Radius;
     public double Density;
@@ -15,10 +15,28 @@ public struct CircleBody
 
     public Trail trail;
 
+    public readonly Double2 Velocity => RigidBody.Velocity;
+
+    public readonly double InverseMass => RigidBody.InverseMass;
+
+    public readonly double RestitutionCoeff => RigidBody.RestitutionCoeff;
+
+    public Double2 Position
+    {
+        readonly get => Transform.Position;
+        set => Transform.Position = value;
+    }
+
+    public void ApplyImpulse(Double2 impulse, Double2 contactVector)
+    {
+        RigidBody.ApplyImpulse(impulse, contactVector);
+    }
+
     public void CalculateMass()
     {
-        double mass = Math.PI * Radius * Radius * Density;
-        double inertia = mass * Radius * Radius / 2;
+        double rSq = Radius * Radius;
+        double mass = Math.PI * rSq * Density;
+        double inertia = mass * rSq / 2;
 
         RigidBody.InverseMass = mass != 0 ? 1.0 / mass : 0.0;
         RigidBody.InverseInertia = inertia != 0 ? 1.0 / inertia : 0.0;

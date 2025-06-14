@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
 using System.Text;
@@ -11,7 +12,9 @@ namespace PhysicsEngine;
 
 public class World
 {
-    public Storage<CircleBody> circles = new(1024);
+    private PhysicsWorld _physics;
+
+    public Storage<CircleBody> circles = new(128);
 
     public Random rng;
 
@@ -46,19 +49,33 @@ public class World
     {
         rng = random;
 
+        _physics = new PhysicsWorld(circles);
+
         for (int i = 0; i < 5; i++)
         {
             SpawnCircle();
+        }
+        
+        for (int i = 0; i < 5; i++)
+        {
+            ref CircleBody circle = ref SpawnCircle();
+            circle.Transform.Position *= 0.25;
+            circle.RigidBody.Velocity = new();
         }
     }
 
     public ref CircleBody SpawnCircle()
     {
-        ref CircleBody circle = ref circles.Add();
+        return ref SpawnCircle(rng, circles);
+    }
+
+    public static ref CircleBody SpawnCircle(Random rng, Storage<CircleBody> storage)
+    {
+        ref CircleBody circle = ref storage.Add();
         circle = new CircleBody
         {
             Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
-            Radius = rng.Next(1, 4) / 2.0,
+            Radius = rng.Next(20, 40),
             Density = 250f,
             trail = new Trail(512),
         };
@@ -67,6 +84,7 @@ public class World
         circle.RigidBody.Velocity = new Double2(50, -50);
         circle.RigidBody.AngularVelocity = 8;
         circle.RigidBody.Torque = -150;
+        circle.RigidBody.RestitutionCoeff = 1;
 
         circle.CalculateMass();
 
@@ -152,15 +170,22 @@ public class World
                 circle.trail.Update((Vector2) circle.Transform.Position);
             }
         }
+
+        long startStamp = Stopwatch.GetTimestamp(); 
+        _physics.FixedUpdate(deltaTime);
+        TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
+        Console.WriteLine($"Collision: {endTime.TotalMilliseconds}ms");
     }
 
     public void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch)
     {
-        float scale = 16;
+        float scale = 1;
 
         if (renderPass == RenderPass.Scene)
         {
             DrawWorld(assets, spriteBatch, scale);
+
+            _physics.DrawWorld(assets, spriteBatch, scale);
         }
     }
 
@@ -168,19 +193,17 @@ public class World
     {
         foreach (ref CircleBody circle in circles.AsSpan())
         {
-            spriteBatch.DrawCircle(
-                (Vector2) circle.Transform.Position,
-                scale * (float) circle.Radius,
-                (int) (scale * Math.Max(8, (float) circle.Radius / 2f)),
-                circle.Color,
-                8f);
+            Vector2 center = (Vector2) circle.Transform.Position;
+            float radius = scale * (float) circle.Radius;
+            int sides = (int) (scale * Math.Max(32, (float) circle.Radius * 0.75f));
+            spriteBatch.DrawCircle(center, radius, sides, circle.Color, 4f);
         }
 
         if (_lineTrail)
         {
             foreach (ref CircleBody circle in circles.AsSpan())
             {
-                circle.trail.Draw(spriteBatch, circle.Color, scale * (float) circle.Radius / 2f);
+                circle.trail.Draw(spriteBatch, circle.Color, scale * (float) circle.Radius * 0.4f);
             }
         }
 

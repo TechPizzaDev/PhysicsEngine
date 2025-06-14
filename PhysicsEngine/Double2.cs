@@ -149,6 +149,7 @@ public readonly struct Double2 : ISpanFormattable
 
     public static Double2 operator +(Double2 a, Double2 b) => new(a._value + b._value);
     public static Double2 operator -(Double2 a, Double2 b) => new(a._value - b._value);
+    public static Double2 operator -(Double2 a) => new(-a._value);
 
     public static Double2 operator *(Double2 a, Double2 b) => new(a._value * b._value);
     public static Double2 operator *(Double2 a, double b) => new(a._value * b);

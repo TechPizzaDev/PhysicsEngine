@@ -1,6 +1,6 @@
 ﻿namespace PhysicsEngine.Shapes;
 
-public struct RigidBody
+public struct RigidBody2D : IRigidBody2D
 {
     public Double2 Velocity;
     public Double2 Force;
@@ -9,6 +9,12 @@ public struct RigidBody
     public double AngularVelocity;
     public double InverseInertia;
     public double RestitutionCoeff;
+
+    readonly Double2 IRigidBody2D.Velocity => Velocity;
+
+    readonly double IRigidBody2D.InverseMass => InverseMass;
+
+    readonly double IRigidBody2D.RestitutionCoeff => RestitutionCoeff;
 
     // Acceleration
     //    F = mA
@@ -41,13 +47,13 @@ public struct RigidBody
         AngularVelocity += Torque * InverseInertia * halfDt;
     }
 
-    public void IntegrateVelocity(ref Transform transform, Double2 gravity, double dt)
+    public void IntegrateVelocity(ref Transform2D transform, Double2 gravity, double dt)
     {
         IntegrateVelocity(gravity, dt);
         transform.Position += Velocity * dt;
     }
 
-    public void IntegrateAngular(ref Transform transform, double dt)
+    public void IntegrateAngular(ref Transform2D transform, double dt)
     {
         IntegrateAngular(dt);
         transform.Rotation += AngularVelocity * dt;

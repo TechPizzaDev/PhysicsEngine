@@ -13,27 +13,30 @@ public readonly struct Circle
         Radius = radius;
     }
 
-    public bool Intersect(Circle circle)
+    public bool Intersect(Circle circle, out double depthSquared)
     {
-        double rSum = circle.Radius + Radius;
+        double rA = Radius;
+        double rB = circle.Radius;
+
+        double rSum = rA + rB;
         double rSq = rSum * rSum;
 
-        Double2 dist = circle.Origin - Origin;
-        double dSq = dist.LengthSquared();
-
-        return dSq <= rSq;
-    }
-
-    public IntersectionResult Intersect(Circle circle, out Double2 hitA, out Double2 hitB, out double depth)
-    {
         Double2 delta = circle.Origin - Origin;
         double distSq = delta.LengthSquared();
-        double dist = Math.Sqrt(distSq);
+        depthSquared = distSq;
+
+        return distSq <= rSq;
+    }
+
+    public IntersectionResult Intersect(Circle circle, out Double2 hitA, out Double2 hitB, out double distance)
+    {
+        Double2 delta = circle.Origin - Origin;
+        double dist = Math.Sqrt(delta.LengthSquared());
         delta /= dist;
-        depth = dist;
 
         double rA = Radius;
         double rB = circle.Radius;
+        distance = dist;
 
         bool overlaps = dist <= rA + rB;
         bool cuts = dist >= Math.Abs(rA - rB);
