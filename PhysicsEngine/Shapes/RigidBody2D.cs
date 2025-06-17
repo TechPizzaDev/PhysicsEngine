@@ -29,34 +29,32 @@ public struct RigidBody2D : IRigidBody2D
     // x += v * dt
 
     // see http://www.niksula.hut.fi/~hkankaan/Homepages/gravity.html
-    public void IntegrateVelocity(Double2 gravity, double dt)
+    public void IntegrateVelocity(Double2 gravity, double halfDt)
     {
         if (InverseMass == 0.0)
             return;
 
-        double halfDt = dt * 0.5;
         Velocity += (Force * InverseMass + gravity) * halfDt;
     }
 
-    public void IntegrateAngular(double dt)
+    public void IntegrateAngular(double halfDt)
     {
         if (InverseInertia == 0.0)
             return;
 
-        double halfDt = dt * 0.5;
         AngularVelocity += Torque * InverseInertia * halfDt;
     }
 
-    public void IntegrateVelocity(ref Transform2D transform, Double2 gravity, double dt)
+    public void IntegrateVelocity(ref Transform2D transform, Double2 gravity, double halfDt)
     {
-        IntegrateVelocity(gravity, dt);
-        transform.Position += Velocity * dt;
+        IntegrateVelocity(gravity, halfDt);
+        transform.Position += Velocity * (halfDt + halfDt);
     }
 
-    public void IntegrateAngular(ref Transform2D transform, double dt)
+    public void IntegrateAngular(ref Transform2D transform, double halfDt)
     {
-        IntegrateAngular(dt);
-        transform.Rotation += AngularVelocity * dt;
+        IntegrateAngular(halfDt);
+        transform.Rotation += AngularVelocity * (halfDt + halfDt);
     }
 
     public void ApplyForce(Double2 force)

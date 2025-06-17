@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 using System.Text;
 using ImGuiNET;
 using MonoGame.Framework;
@@ -40,10 +41,10 @@ public class World
     private bool _labelInertia;
     private bool _labelTorque;
 
-    private bool _lineTrail = true;
+    private bool _lineTrail = false;
     private bool _lineVelocity = false;
-    private bool _lineAngle = true;
-    private bool _lineForward = true;
+    private bool _lineAngle = false;
+    private bool _lineForward = false;
 
     public World(Random random)
     {
@@ -55,12 +56,17 @@ public class World
         {
             SpawnCircle();
         }
-        
+
         for (int i = 0; i < 5; i++)
         {
             ref CircleBody circle = ref SpawnCircle();
             circle.Transform.Position *= 0.25;
             circle.RigidBody.Velocity = new();
+        }
+
+        for (int i = 0; i < 500; i++)
+        {
+            SpawnCircle();
         }
     }
 
@@ -79,12 +85,12 @@ public class World
             Density = 250f,
             trail = new Trail(512),
         };
-        circle.Transform.Position = rng.NextVector2(new Vector2(-1500, -1000), new Vector2(1500, 0));
+        circle.Transform.Position = rng.NextVector2(new Vector2(-3000, -5000), new Vector2(3000, 0));
 
         circle.RigidBody.Velocity = new Double2(50, -50);
         circle.RigidBody.AngularVelocity = 8;
         circle.RigidBody.Torque = -150;
-        circle.RigidBody.RestitutionCoeff = 1;
+        circle.RigidBody.RestitutionCoeff = 0.5;
 
         circle.CalculateMass();
 
@@ -143,44 +149,43 @@ public class World
         ImGui.Checkbox("Forward", ref _lineForward);
     }
 
+    private void IntegrateBody(double halfDt, ref CircleBody circle)
+    {
+        if (_enableVelocity)
+        {
+            circle.RigidBody.IntegrateVelocity(ref circle.Transform, Gravity, halfDt);
+            circle.RigidBody.IntegrateVelocity(Gravity, halfDt);
+        }
+
+        if (_enableAngular)
+        {
+            circle.RigidBody.IntegrateAngular(halfDt);
+            circle.RigidBody.IntegrateAngular(ref circle.Transform, halfDt);
+        }
+    }
+
     public void FixedUpdate(double deltaTime)
     {
-        foreach (ref CircleBody circle in circles.AsSpan())
-        {
-            if (_enableVelocity)
-                circle.RigidBody.IntegrateVelocity(Gravity, deltaTime);
-
-            if (_enableAngular)
-                circle.RigidBody.IntegrateAngular(deltaTime);
-        }
+        double halfDt = deltaTime * 0.5;
 
         foreach (ref CircleBody circle in circles.AsSpan())
         {
-            if (_enableVelocity)
-                circle.RigidBody.IntegrateVelocity(ref circle.Transform, Gravity, deltaTime);
+            IntegrateBody(halfDt, ref circle);
 
-            if (_enableAngular)
-                circle.RigidBody.IntegrateAngular(ref circle.Transform, deltaTime);
-        }
-
-        if (_lineTrail)
-        {
-            foreach (ref CircleBody circle in circles.AsSpan())
+            if (_lineTrail)
             {
                 circle.trail.Update((Vector2) circle.Transform.Position);
             }
         }
 
-        long startStamp = Stopwatch.GetTimestamp(); 
+        long startStamp = Stopwatch.GetTimestamp();
         _physics.FixedUpdate(deltaTime);
         TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
         Console.WriteLine($"Collision: {endTime.TotalMilliseconds}ms");
     }
 
-    public void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch)
+    public void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
-        float scale = 1;
-
         if (renderPass == RenderPass.Scene)
         {
             DrawWorld(assets, spriteBatch, scale);
@@ -193,98 +198,111 @@ public class World
     {
         foreach (ref CircleBody circle in circles.AsSpan())
         {
-            Vector2 center = (Vector2) circle.Transform.Position;
-            float radius = scale * (float) circle.Radius;
-            int sides = (int) (scale * Math.Max(32, (float) circle.Radius * 0.75f));
-            spriteBatch.DrawCircle(center, radius, sides, circle.Color, 4f);
+            DrawCircleBody(spriteBatch, scale, circle);
+
+            if (_lineAngle)
+                DrawAngle(spriteBatch, circle);
+            
+            if (_lineForward)
+                DrawForward(spriteBatch, circle);
+        
+            if (_lineVelocity)
+                DrawVelocity(spriteBatch, circle);
+            
+            DrawCircleDebugText(assets, spriteBatch, scale, _strBuilder, circle);
         }
+    }
+
+    private void DrawCircleBody(SpriteBatch spriteBatch, float scale, in CircleBody circle)
+    {
+        Vector2 center = (Vector2) circle.Transform.Position;
+        float radius = (float) circle.Radius;
+        int sides = int.Clamp((int) ((float) circle.Radius * scale + 3.5f), 6, 42);
+        spriteBatch.DrawCircle(center, radius, sides, circle.Color, 4f);
 
         if (_lineTrail)
         {
-            foreach (ref CircleBody circle in circles.AsSpan())
-            {
-                circle.trail.Draw(spriteBatch, circle.Color, scale * (float) circle.Radius * 0.4f);
-            }
-        }
-
-        if (_lineAngle)
-        {
-            foreach (ref CircleBody circle in circles.AsSpan())
-            {
-                Vector2 origin = (Vector2) circle.Transform.Position;
-
-                (float sin, float cos) = MathF.SinCos((float) circle.Transform.Rotation);
-                Vector2 dir = new(cos, sin);
-
-                float radius = scale * (float) circle.Radius;
-                Vector2 edge = origin + new Vector2(radius - 1) * dir;
-
-                float width = MathF.Min(radius, 4f);
-                spriteBatch.DrawLine(origin, edge, Color.Blue, width);
-            }
-        }
-
-        if (_lineForward)
-        {
-            foreach (ref CircleBody circle in circles.AsSpan())
-            {
-                Vector2 origin = (Vector2) circle.Transform.Position;
-                Vector2 velocity = (Vector2) circle.RigidBody.Velocity;
-
-                float angle = MathF.Atan2(velocity.Y, velocity.X);
-                (float sin, float cos) = MathF.SinCos(angle);
-                Vector2 dir = new(cos, sin);
-
-                float radius = scale * (float) circle.Radius;
-                Vector2 edge = origin + new Vector2(radius) * dir;
-
-                float width = MathF.Min(radius, 4f);
-                spriteBatch.DrawLine(edge - dir * 2, edge + dir * 8f, Color.Aqua, width);
-            }
-        }
-
-        if (_lineVelocity)
-        {
-            foreach (ref CircleBody circle in circles.AsSpan())
-            {
-                Vector2 origin = (Vector2) circle.Transform.Position;
-                Vector2 end = (Vector2) circle.RigidBody.Velocity;
-                spriteBatch.DrawLine(origin, origin + end, Color.Green, 2f);
-            }
-        }
-
-        StringBuilder builder = _strBuilder;
-
-        foreach (ref CircleBody circle in circles.AsSpan())
-        {
-            builder.Clear();
-
-            if (_labelPosition)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"P {circle.Transform.Position:0.0}");
-            if (_labelAngle)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"A {circle.Transform.Rotation:0.00}");
-            if (_labelRadius)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"R {circle.Radius:0.0}");
-            if (_labelDensity)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"D {circle.Density:0.0}");
-            if (_labelVelocity)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"V {circle.RigidBody.Velocity:0.0}");
-            if (_labelAngular)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"S {circle.RigidBody.AngularVelocity:0.00}");
-            if (_labelMass)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"M {1.0 / circle.RigidBody.InverseMass:0.0}");
-            if (_labelInertia)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"I {1.0 / circle.RigidBody.InverseInertia:0.0}");
-            if (_labelTorque)
-                builder.AppendLine(NumberFormatInfo.InvariantInfo, $"T {circle.RigidBody.Torque:0.00}");
-
-            if (builder.Length <= 0)
-                continue;
-
-            Vector2 origin = (Vector2) circle.Transform.Position;
-            spriteBatch.DrawString(
-                assets.Font_Consolas, builder, origin + new Vector2((float) circle.Radius * scale + 4, -8),
-                circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.None, 0);
+            circle.trail.Draw(spriteBatch, circle.Color, (float) circle.Radius * 0.4f);
         }
     }
+
+    private static void DrawAngle(SpriteBatch spriteBatch, in CircleBody circle)
+    {
+        Vector2 origin = (Vector2) circle.Transform.Position;
+
+        (float sin, float cos) = MathF.SinCos((float) circle.Transform.Rotation);
+        Vector2 dir = new(cos, sin);
+
+        float radius = (float) circle.Radius;
+        Vector2 edge = origin + new Vector2(radius - 1) * dir;
+
+        float width = MathF.Min(radius, 4f);
+        spriteBatch.DrawLine(origin, edge, Color.Blue, width);
+    }
+
+    private static void DrawForward(SpriteBatch spriteBatch, in CircleBody circle)
+    {
+        Vector2 origin = (Vector2) circle.Transform.Position;
+        Vector2 velocity = (Vector2) circle.RigidBody.Velocity;
+
+        float angle = MathF.Atan2(velocity.Y, velocity.X);
+        (float sin, float cos) = MathF.SinCos(angle);
+        Vector2 dir = new(cos, sin);
+
+        float radius = (float) circle.Radius;
+        Vector2 edge = origin + new Vector2(radius) * dir;
+
+        float width = MathF.Min(radius, 4f);
+        spriteBatch.DrawLine(edge - dir * 2, edge + dir * 8f, Color.Aqua, width);
+    }
+
+    private static void DrawVelocity(SpriteBatch spriteBatch, in CircleBody circle)
+    {
+        Vector2 origin = (Vector2) circle.Transform.Position;
+        Vector2 end = (Vector2) circle.RigidBody.Velocity;
+        spriteBatch.DrawLine(origin, origin + end, Color.Green, 2f);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void Append(StringBuilder builder, in CircleBody circle)
+    {
+        var invariant = NumberFormatInfo.InvariantInfo;
+
+        if (_labelPosition)
+            builder.AppendLine(invariant, $"P {circle.Transform.Position:0.0}");
+        if (_labelAngle)
+            builder.AppendLine(invariant, $"A {circle.Transform.Rotation:0.00}");
+        if (_labelRadius)
+            builder.AppendLine(invariant, $"R {circle.Radius:0.0}");
+        if (_labelDensity)
+            builder.AppendLine(invariant, $"D {circle.Density:0.0}");
+
+        ref readonly RigidBody2D body = ref circle.RigidBody;
+        if (_labelVelocity)
+            builder.AppendLine(invariant, $"V {body.Velocity:0.0}");
+        if (_labelAngular)
+            builder.AppendLine(invariant, $"S {body.AngularVelocity:0.00}");
+        if (_labelMass)
+            builder.AppendLine(invariant, $"M {1.0 / body.InverseMass:0.0}");
+        if (_labelInertia)
+            builder.AppendLine(invariant, $"I {1.0 / body.InverseInertia:0.0}");
+        if (_labelTorque)
+            builder.AppendLine(invariant, $"T {body.Torque:0.00}");
+    }
+    private void DrawCircleDebugText(
+        AssetRegistry assets, SpriteBatch spriteBatch, float scale, StringBuilder builder, in CircleBody circle)
+    {
+        builder.Clear();
+
+        Append(builder, circle);
+
+        if (builder.Length <= 0)
+            return;
+
+        Vector2 origin = (Vector2) circle.Transform.Position;
+        spriteBatch.DrawString(
+            assets.Font_Consolas, builder, origin + new Vector2((float) circle.Radius * scale + 4, -8),
+            circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.None, 0);
+    }
+
 }

@@ -12,20 +12,11 @@ public readonly struct Double2 : ISpanFormattable
 {
     private readonly Vector128<double> _value;
 
-    public Double2(Vector128<double> value)
-    {
-        _value = value;
-    }
+    public Double2(Vector128<double> value) => _value = value;
 
-    public Double2(double x, double y)
-    {
-        _value = Vector128.Create(x, y);
-    }
+    public Double2(double x, double y) => _value = Vector128.Create(x, y);
 
-    public Double2(double value)
-    {
-        _value = Vector128.Create(value);
-    }
+    public Double2(double value) => _value = Vector128.Create(value);
 
     public double X => _value.GetElement(0);
 
@@ -33,45 +24,25 @@ public readonly struct Double2 : ISpanFormattable
 
     public Vector128<double> AsVector128() => _value;
 
-    public double Length()
-    {
-        return Math.Sqrt(LengthSquared());
-    }
+    public double Length() => Math.Sqrt(LengthSquared());
 
-    public double LengthSquared()
-    {
-        return Dot(this, this);
-    }
+    public double LengthSquared() => Dot(this, this);
 
-    public Double2 Normalize()
-    {
-        return this / Length();
-    }
+    public Double2 Normalize() => this / Length();
+    
+    public Double2 Transpose() => new(Transpose(_value));
 
-    public Double2 Transpose()
-    {
-        return new(Transpose(_value));
-    }
+    public Double2 RotateCW() => new(Transpose(_value) ^ Vector128.Create(-0.0, 0.0));
 
-    public Double2 RotateCW()
-    {
-        return new(Transpose(_value) ^ Vector128.Create(-0.0, 0.0));
-    }
+    public Double2 RotateCCW() => new(Transpose(_value) ^ Vector128.Create(0.0, -0.0));
 
-    public Double2 RotateCCW()
-    {
-        return new(Transpose(_value) ^ Vector128.Create(0.0, -0.0));
-    }
+    public Double2 Round() => new(Vector128.Round(_value));
 
-    public override string ToString()
-    {
-        return ToString("G", null);
-    }
+    public Double2 Floor() => new(Vector128.Floor(_value));
 
-    public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
-    {
-        return ToString(format, null);
-    }
+    public override string ToString() => ToString("G", null);
+
+    public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, null);
 
     public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
     {
@@ -142,10 +113,7 @@ public readonly struct Double2 : ISpanFormattable
         return new(Vector128.MultiplyAddEstimate(a._value, b._value, c._value));
     }
 
-    private static Vector128<double> Transpose(Vector128<double> v)
-    {
-        return Vector128.Shuffle(v, Vector128.Create(1, 0));
-    }
+    private static Vector128<double> Transpose(Vector128<double> v) => Vector128.Shuffle(v, Vector128.Create(1, 0));
 
     public static Double2 operator +(Double2 a, Double2 b) => new(a._value + b._value);
     public static Double2 operator -(Double2 a, Double2 b) => new(a._value - b._value);

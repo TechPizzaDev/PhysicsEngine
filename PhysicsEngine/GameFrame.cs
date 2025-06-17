@@ -240,9 +240,10 @@ namespace PhysicsEngine
             GraphicsDevice.SetRenderTarget(null, Color.Black.ToVector4());
 
             _spriteBatch.Begin(blendState: BlendState.AlphaBlend, samplerState: SamplerState.LinearClamp);
-            _spriteBatch.Draw(_backgroundTarget, currentViewport.Bounds, _backgroundTarget.Bounds, Color.White);
-            _spriteBatch.Draw(_sceneTarget, currentViewport.Bounds, _sceneTarget.Bounds, Color.White);
-            _spriteBatch.Draw(_uiTarget, currentViewport.Bounds, _uiTarget.Bounds, Color.White);
+            RectangleF dstRect = currentViewport.Bounds;
+            _spriteBatch.Draw(_backgroundTarget, dstRect, _backgroundTarget.Bounds, Color.White);
+            _spriteBatch.Draw(_sceneTarget, dstRect, _sceneTarget.Bounds, Color.White);
+            _spriteBatch.Draw(_uiTarget, dstRect, _uiTarget.Bounds, Color.White);
             _spriteBatch.End();
 
             _imguiRenderer.Draw();
@@ -258,7 +259,7 @@ namespace PhysicsEngine
                 samplerState: SamplerState.PointClamp,
                 transformMatrix: _sceneRenderMatrix);
 
-            _world.Draw(RenderPass.Background, _assets, spriteBatch);
+            _world.Draw(RenderPass.Background, _assets, spriteBatch, _scale);
 
             spriteBatch.End();
         }
@@ -271,7 +272,7 @@ namespace PhysicsEngine
                 samplerState: SamplerState.PointClamp,
                 transformMatrix: _sceneRenderMatrix);
 
-            _world.Draw(RenderPass.Scene, _assets, spriteBatch);
+            _world.Draw(RenderPass.Scene, _assets, spriteBatch, _scale);
 
             spriteBatch.End();
         }
@@ -287,7 +288,7 @@ namespace PhysicsEngine
                 samplerState: SamplerState.PointClamp,
                 transformMatrix: _uiRenderMatrix);
 
-            _world.Draw(RenderPass.UserInterface, _assets, spriteBatch);
+            _world.Draw(RenderPass.UserInterface, _assets, spriteBatch, 1f);
 
             spriteBatch.End();
 

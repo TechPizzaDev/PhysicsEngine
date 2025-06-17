@@ -42,12 +42,12 @@ namespace PhysicsEngine
 
         public void RemoveAt(int index)
         {
-            if ((uint) index >= (uint) _count)
-                throw new ArgumentOutOfRangeException(nameof(index));
+            int count = _count;
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint) index, (uint) count, nameof(index));
 
-            T lastValue = _values[_count - 1];
+            T lastValue = _values[count - 1];
             _values[index] = lastValue;
-            _count--;
+            _count = count - 1;
         }
 
         public void Clear()
