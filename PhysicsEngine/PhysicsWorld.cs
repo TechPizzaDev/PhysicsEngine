@@ -3,103 +3,20 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
+using PhysicsEngine.Collision;
 using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine;
-
-public struct Contact2D
-{
-    public Double2 Normal;
-    public Double2 Point;
-    public double Depth;
-}
-
-public struct BodyContact2D
-{
-    public int BodyIndex1;
-    public int BodyIndex2;
-    public Contact2D Contact;
-}
-
-readonly struct CircleToCircleContactGenerator : IContactGenerator<CircleBody, CircleBody>
-{
-    public bool Generate(ref CircleBody a, ref CircleBody b, out Contact2D contact)
-    {
-        contact = default;
-
-        Circle cA = new(a.Position, a.Radius);
-        Circle cB = new(b.Position, b.Radius);
-
-        Double2 v = b.Velocity - a.Velocity;
-        Double2 normal = cB.Origin - cA.Origin;
-
-        if (Double2.Dot(v, normal) > 0)
-        {
-            // circles are moving apart
-            return false;
-        }
-
-        if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & IntersectionResult.Cuts) == 0)
-        {
-            return false;
-        }
-
-        contact = new Contact2D()
-        {
-            Normal = normal / distance,
-            Point = (hitA + hitB) / 2,
-            Depth = (cA.Radius + cB.Radius) - distance
-        };
-        return true;
-    }
-}
-
-readonly struct CircleToPlaneContactGenerator : IContactGenerator<CircleBody, Plane2D>
-{
-    public bool Generate(ref CircleBody a, ref Plane2D plane, out Contact2D contact)
-    {
-        contact = default;
-
-        Circle circle = new(a.Position, a.Radius);
-
-        if (!plane.Intersect(circle, out Double2 hitA, out Double2 hitB, out double depth))
-        {
-            return false;
-        }
-
-        contact = new Contact2D()
-        {
-            Normal = plane.Normal,
-            Point = (hitA + hitB) / 2,
-            Depth = depth
-        };
-        return true;
-    }
-}
-
-public readonly struct PlaneBody2D : ITransform2D, IRigidBody2D
-{
-    public readonly Plane2D Data;
-
-    public Double2 Position { get => default; set { } }
-
-    public Double2 Velocity => default;
-
-    public double InverseMass => 1.0 / 1_000_000_000;
-
-    public double RestitutionCoeff => 0;
-
-    public void ApplyImpulse(Double2 impulse, Double2 contactVector)
-    {
-    }
-}
 
 public class PhysicsWorld
 {
     private Storage<BodyContact2D> _circleContacts = new();
     private Storage<BodyContact2D> _planeContacts = new();
 
+    private Storage<ContactFlair2D> _contactFlairs = new();
+
     private Storage<CircleBody> _bodies;
+
     public Storage<Plane2D> _planes = new();
 
     public PhysicsWorld(Storage<CircleBody> bodies)
@@ -131,12 +48,6 @@ public class PhysicsWorld
 
     public void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
-        Span<CircleBody> bodies = _bodies.AsSpan();
-        DrawContacts(spriteBatch, _circleContacts.AsSpan(), bodies, bodies);
-
-        Span<PlaneBody2D> planeBodies = MemoryMarshal.Cast<Plane2D, PlaneBody2D>(_planes.AsSpan());
-        DrawContacts(spriteBatch, _planeContacts.AsSpan(), bodies, planeBodies);
-
         double planeWidth = 10000;
         foreach (Plane2D plane in _planes.AsSpan())
         {
@@ -144,18 +55,48 @@ public class PhysicsWorld
             Vector2 planeOrthog = (Vector2) (plane.Normal.RotateCW() * planeWidth);
             spriteBatch.DrawLine(planeCenter - planeOrthog, planeCenter + planeOrthog, Color.Purple, 2f);
         }
+
+        int flairLife = 20;
+
+        Span<ContactFlair2D> flairs = _contactFlairs.AsSpan();
+        for (int i = 0; i < flairs.Length; i++)
+        {
+            ref ContactFlair2D flair = ref flairs[i];
+            if (flair.FrameCount >= flairLife)
+            {
+                _contactFlairs.RemoveAt(i);
+                flairs = flairs[..^1];
+                continue;
+            }
+            flair.FrameCount++;
+
+            float progress = flair.FrameCount / (float)flairLife;
+            float size = (1f - progress) * 5f + 5f;
+
+            Color pointColor = new(Color.MediumPurple, 0.5f - progress * 0.4f);
+
+            spriteBatch.DrawPoint(flair.Point, pointColor, size, 0f, MathF.PI / 4);
+            // TODO: draw vector?
+            //spriteBatch.DrawLine(flair.Point, flair.Point + flair.Direction, Color.Purple);
+        }
     }
 
-    private void DrawContacts<T1, T2>(SpriteBatch spriteBatch, Span<BodyContact2D> contacts, Span<T1> span1, Span<T2> span2)
+    private void StoreContactsAsFlair<T1, T2>(
+        ReadOnlySpan<BodyContact2D> contacts,
+        ReadOnlySpan<T1> span1,
+        ReadOnlySpan<T2> span2)
     {
-        foreach (ref BodyContact2D bodyContact in contacts)
+        foreach (ref readonly BodyContact2D bodyContact in contacts)
         {
-            ref T1 o1 = ref span1[bodyContact.BodyIndex1];
-            ref T2 o2 = ref span2[bodyContact.BodyIndex2];
+            ref readonly T1 o1 = ref span1[bodyContact.BodyIndex1];
+            ref readonly T2 o2 = ref span2[bodyContact.BodyIndex2];
             Contact2D contact = bodyContact.Contact;
 
-            Vector2 origin = (Vector2) contact.Point;
-            spriteBatch.DrawLine(origin, origin + (Vector2) (contact.Normal * contact.Depth), Color.Purple);
+            _contactFlairs.Add() = new ContactFlair2D()
+            {
+                Point = (Vector2) contact.Point,
+                Direction = (Vector2) (contact.Normal * contact.Depth),
+            };
         }
     }
 
@@ -190,6 +131,8 @@ public class PhysicsWorld
             o1.Position -= pFactor * o1.InverseMass * contact.Normal;
             o2.Position += pFactor * o2.InverseMass * contact.Normal;
         }
+
+        StoreContactsAsFlair<T1, T2>(contacts, span1, span2);
     }
 
     public void GenerateContacts<TGen, T>(

@@ -1,4 +1,4 @@
-﻿namespace PhysicsEngine;
+﻿namespace PhysicsEngine.Shapes;
 
 public interface IRigidBody2D
 {

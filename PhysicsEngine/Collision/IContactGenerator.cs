@@ -1,4 +1,4 @@
-﻿namespace PhysicsEngine.Shapes;
+﻿namespace PhysicsEngine.Collision;
 
 public interface IContactGenerator<T1, T2>
 {
