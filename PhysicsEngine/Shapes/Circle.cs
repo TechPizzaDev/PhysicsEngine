@@ -41,6 +41,12 @@ public readonly struct Circle
         bool overlaps = dist <= rA + rB;
         bool cuts = dist >= Math.Abs(rA - rB);
         IntersectionResult result = IntersectionHelper.MakeResult(overlaps, cuts);
+        if (result == IntersectionResult.None)
+        {
+            hitA = default;
+            hitB = default;
+            return result;
+        }
 
         double a = (rA * rA - rB * rB + dist * dist) / (2 * dist);
         double height = Math.Sqrt(Math.Abs(rA * rA - a * a));
