@@ -4,7 +4,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody : ITransform2D, IRigidBody2D, IShape
+public struct CircleBody : IRigidBody2D, IShape2D
 {
     public Transform2D Transform;
     public RigidBody2D RigidBody;

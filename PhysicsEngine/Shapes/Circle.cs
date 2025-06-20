@@ -4,7 +4,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public readonly struct Circle : IShape
+public readonly struct Circle : IShape2D
 {
     public readonly Double2 Origin;
     public readonly double Radius;

@@ -9,7 +9,7 @@ using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine.Numerics;
 
-public readonly struct Bound2 : IEquatable<Bound2>, ISpanFormattable, IShape
+public readonly struct Bound2 : IEquatable<Bound2>, ISpanFormattable, IShape2D
 {
     public readonly Double2 Min;
     public readonly Double2 Max;
@@ -40,7 +40,7 @@ public readonly struct Bound2 : IEquatable<Bound2>, ISpanFormattable, IShape
         return size.GetElement(1) * size.GetElement(0);
     }
 
-    Bound2 IShape.GetBounds() => this;
+    Bound2 IShape2D.GetBounds() => this;
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Vector256<double> AsVector256() => Vector256.Create(Min.AsVector128(), Max.AsVector128());
