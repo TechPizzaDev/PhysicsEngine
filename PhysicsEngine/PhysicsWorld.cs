@@ -20,11 +20,13 @@ public class PhysicsWorld
 
     public Storage<Plane2D> _planes = new();
 
+    public Double2 Gravity = new(0, -9.82);
+
     public PhysicsWorld(Storage<CircleBody> bodies)
     {
         _bodies = bodies;
 
-        _planes.Add() = new Plane2D(new Double2(0, 1), 0);
+        _planes.Add() = new Plane2D(new Double2(0, -1), 0);
     }
 
     public void FixedUpdate(double deltaTime)

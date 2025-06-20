@@ -22,8 +22,6 @@ public class World
 
     private StringBuilder _strBuilder = new();
 
-    public Double2 Gravity = new(0, 9.82);
-
     private Vector2 mousePosition;
 
     public double TotalTime;
@@ -86,9 +84,9 @@ public class World
             Density = 250f,
             trail = new Trail(512),
         };
-        circle.Transform.Position = rng.NextVector2(new Vector2(-3000, -5000), new Vector2(3000, 0));
+        circle.Transform.Position = rng.NextVector2(new Vector2(-3000, 5000), new Vector2(3000, 0));
 
-        circle.RigidBody.Velocity = new Double2(50, -50);
+        circle.RigidBody.Velocity = new Double2(50, 50);
         circle.RigidBody.AngularVelocity = 8;
         circle.RigidBody.Torque = -150;
         circle.RigidBody.RestitutionCoeff = 0.5;
@@ -121,9 +119,9 @@ public class World
 
     private void ImGuiPhysics()
     {
-        Vector2 gravity = (Vector2) Gravity;
+        Vector2 gravity = (Vector2) _physics.Gravity;
         ImGui.InputFloat2("Gravity", ref gravity);
-        Gravity = gravity;
+        _physics.Gravity = gravity;
 
         ImGui.Checkbox("Velocity", ref _enableVelocity);
         ImGui.Checkbox("Angular", ref _enableAngular);
@@ -150,12 +148,12 @@ public class World
         ImGui.Checkbox("Forward", ref _lineForward);
     }
 
-    private void IntegrateBody(double halfDt, ref CircleBody circle)
+    private void IntegrateBody(double halfDt, Double2 gravity, ref CircleBody circle)
     {
         if (_enableVelocity)
         {
-            circle.RigidBody.IntegrateVelocity(ref circle.Transform, Gravity, halfDt);
-            circle.RigidBody.IntegrateVelocity(Gravity, halfDt);
+            circle.RigidBody.IntegrateVelocity(ref circle.Transform, gravity, halfDt);
+            circle.RigidBody.IntegrateVelocity(gravity, halfDt);
         }
 
         if (_enableAngular)
@@ -163,15 +161,20 @@ public class World
             circle.RigidBody.IntegrateAngular(halfDt);
             circle.RigidBody.IntegrateAngular(ref circle.Transform, halfDt);
         }
+
+        circle.RigidBody.Force = default;
+        circle.RigidBody.Torque = 0;
     }
 
     public void FixedUpdate(double deltaTime)
     {
         double halfDt = deltaTime * 0.5;
 
+        Double2 gravity = _physics.Gravity;
+
         foreach (ref CircleBody circle in circles.AsSpan())
         {
-            IntegrateBody(halfDt, ref circle);
+            IntegrateBody(halfDt, gravity, ref circle);
 
             if (_lineTrail)
             {
@@ -303,7 +306,7 @@ public class World
         Vector2 origin = (Vector2) circle.Transform.Position;
         spriteBatch.DrawString(
             assets.Font_Consolas, builder, origin + new Vector2((float) circle.Radius * scale + 4, -8),
-            circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.None, 0);
+            circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.Vertical, 0);
     }
 
 }

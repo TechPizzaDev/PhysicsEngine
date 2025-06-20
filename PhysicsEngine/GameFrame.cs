@@ -184,21 +184,21 @@ namespace PhysicsEngine
                 _scale = MathHelper.Clamp(_scale + scaleDelta, MinZoom, MaxZoom);
 
                 if ((input.NewMouseState.LeftButton & ButtonState.Pressed) != 0)
-                    _cameraTarget += _mousePosDelta / _scale;
+                    _cameraTarget += _mousePosDelta / new Vector2(_scale, -_scale);
             }
             else
             {
                 if ((mouseState.MiddleButton & ButtonState.Pressed) != 0)
-                    _cameraTarget += _mousePosDelta / _scale;
+                    _cameraTarget += _mousePosDelta / new Vector2(_scale, -_scale);
             }
 
             _playerMatrix =
                 Matrix4x4.CreateTranslation(new Vector3(_cameraTarget, 0)) *
-                Matrix4x4.CreateScale(_scale);
+                Matrix4x4.CreateScale(_scale, -_scale, _scale);
 
             _sceneTransformMatrix =
                 _playerMatrix *
-                Matrix4x4.CreateTranslation(_lastViewport.Width / 2f, _lastViewport.Height / 2f, 0);
+                Matrix4x4.CreateTranslation(_lastViewport.Width / 2f, _lastViewport.Height, 0);
 
             _sceneRenderMatrix =
                 _sceneTransformMatrix *
@@ -257,6 +257,7 @@ namespace PhysicsEngine
                 sortMode: SpriteSortMode.Deferred,
                 blendState: BlendState.NonPremultiplied,
                 samplerState: SamplerState.PointClamp,
+                rasterizerState: RasterizerState.CullClockwise,
                 transformMatrix: _sceneRenderMatrix);
 
             _world.Draw(RenderPass.Background, _assets, spriteBatch, _scale);
@@ -270,6 +271,7 @@ namespace PhysicsEngine
                 sortMode: SpriteSortMode.Deferred,
                 blendState: BlendState.NonPremultiplied,
                 samplerState: SamplerState.PointClamp,
+                rasterizerState: RasterizerState.CullClockwise,
                 transformMatrix: _sceneRenderMatrix);
 
             _world.Draw(RenderPass.Scene, _assets, spriteBatch, _scale);
