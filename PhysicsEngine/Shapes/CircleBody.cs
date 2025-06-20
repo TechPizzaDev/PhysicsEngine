@@ -4,7 +4,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody : ITransform2D, IRigidBody2D
+public struct CircleBody : ITransform2D, IRigidBody2D, IShape
 {
     public Transform2D Transform;
     public RigidBody2D RigidBody;
@@ -28,10 +28,13 @@ public struct CircleBody : ITransform2D, IRigidBody2D
         set => Transform.Position = value;
     }
 
-    public void ApplyImpulse(Double2 impulse, Double2 contactVector)
-    {
-        RigidBody.ApplyImpulse(impulse, contactVector);
-    }
+    public readonly Circle Circle => new(Transform.Position, Radius);
+
+    public readonly Bound2 GetBounds() => Circle.GetBounds();
+
+    public readonly double GetArea() => Circle.GetArea();
+
+    public void ApplyImpulse(Double2 impulse, Double2 contactVector) => RigidBody.ApplyImpulse(impulse, contactVector);
 
     public void CalculateMass()
     {

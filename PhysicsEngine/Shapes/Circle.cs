@@ -1,9 +1,10 @@
 ﻿using System;
+using System.Runtime.CompilerServices;
 using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public readonly struct Circle
+public readonly struct Circle : IShape
 {
     public readonly Double2 Origin;
     public readonly double Radius;
@@ -13,6 +14,15 @@ public readonly struct Circle
         Origin = origin;
         Radius = radius;
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Bound2 GetBounds()
+    {
+        Double2 size = new(Radius);
+        return new Bound2(Origin - size, Origin + size);
+    }
+
+    public double GetArea() => Radius * Radius * Math.PI;
 
     public bool Intersect(Circle circle, out double depthSquared)
     {

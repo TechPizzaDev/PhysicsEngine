@@ -9,9 +9,7 @@ public readonly struct CircleToPlaneContactGenerator : IContactGenerator<CircleB
     {
         contact = default;
 
-        Circle circle = new(a.Position, a.Radius);
-
-        if (!plane.Intersect(circle, out Double2 hitA, out Double2 hitB, out double depth))
+        if (!plane.Intersect(a.Circle, out Double2 hitA, out Double2 hitB, out double depth))
         {
             return false;
         }

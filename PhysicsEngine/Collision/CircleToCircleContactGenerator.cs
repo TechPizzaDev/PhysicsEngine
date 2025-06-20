@@ -9,8 +9,8 @@ readonly struct CircleToCircleContactGenerator : IContactGenerator<CircleBody, C
     {
         contact = default;
 
-        Circle cA = new(a.Position, a.Radius);
-        Circle cB = new(b.Position, b.Radius);
+        Circle cA = a.Circle;
+        Circle cB = b.Circle;
 
         Double2 v = b.Velocity - a.Velocity;
         Double2 normal = cB.Origin - cA.Origin;
