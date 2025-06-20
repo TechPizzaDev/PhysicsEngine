@@ -33,6 +33,8 @@ public struct CircleBody : ITransform2D, IRigidBody2D, IShape
     public readonly Bound2 GetBounds() => Circle.GetBounds();
 
     public readonly double GetArea() => Circle.GetArea();
+    
+    public void ApplyForce(Double2 force) => RigidBody.ApplyForce(force);
 
     public void ApplyImpulse(Double2 impulse, Double2 contactVector) => RigidBody.ApplyImpulse(impulse, contactVector);
 

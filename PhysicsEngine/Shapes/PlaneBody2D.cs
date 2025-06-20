@@ -14,6 +14,10 @@ public readonly struct PlaneBody2D : ITransform2D, IRigidBody2D
 
     public double RestitutionCoeff => 0;
 
+    public void ApplyForce(Double2 force)
+    {
+    }
+
     public void ApplyImpulse(Double2 impulse, Double2 contactVector)
     {
     }

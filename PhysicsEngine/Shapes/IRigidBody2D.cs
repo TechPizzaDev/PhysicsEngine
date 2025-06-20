@@ -10,5 +10,7 @@ public interface IRigidBody2D
 
     double RestitutionCoeff { get; }
 
+    void ApplyForce(Double2 force);
+
     void ApplyImpulse(Double2 impulse, Double2 contactVector);
 }
