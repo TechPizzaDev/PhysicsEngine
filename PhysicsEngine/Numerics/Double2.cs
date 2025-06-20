@@ -6,9 +6,9 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Text;
 
-namespace PhysicsEngine;
+namespace PhysicsEngine.Numerics;
 
-public readonly struct Double2 : ISpanFormattable
+public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
 {
     private readonly Vector128<double> _value;
 
@@ -29,7 +29,7 @@ public readonly struct Double2 : ISpanFormattable
     public double LengthSquared() => Dot(this, this);
 
     public Double2 Normalize() => this / Length();
-    
+
     public Double2 Transpose() => new(Transpose(_value));
 
     public Double2 RotateCW() => new(Transpose(_value) ^ Vector128.Create(-0.0, 0.0));
@@ -39,6 +39,16 @@ public readonly struct Double2 : ISpanFormattable
     public Double2 Round() => new(Vector128.Round(_value));
 
     public Double2 Floor() => new(Vector128.Floor(_value));
+    
+    public Double2 Min(Double2 other) => new(Vector128.Min(_value, other._value));
+    
+    public Double2 Max(Double2 other) => new(Vector128.Max(_value, other._value));
+
+    public bool Equals(Double2 other) => _value == other._value;
+
+    public override bool Equals(object? obj) => obj is Double2 other && Equals(other);
+
+    public override int GetHashCode() => _value.GetHashCode();
 
     public override string ToString() => ToString("G", null);
 
@@ -47,15 +57,7 @@ public readonly struct Double2 : ISpanFormattable
     public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
     {
         var sb = new StringBuilder();
-        string separator = NumberFormatInfo.GetInstance(formatProvider).NumberGroupSeparator;
-
-        sb.Append('<');
-        sb.Append(X.ToString(format, formatProvider));
-        sb.Append(separator);
-        sb.Append(' ');
-        sb.Append(Y.ToString(format, formatProvider));
-        sb.Append('>');
-
+        sb.Append(this, format, formatProvider);
         return sb.ToString();
     }
 
@@ -114,6 +116,9 @@ public readonly struct Double2 : ISpanFormattable
     }
 
     private static Vector128<double> Transpose(Vector128<double> v) => Vector128.Shuffle(v, Vector128.Create(1, 0));
+
+    public static bool operator ==(Double2 a, Double2 b) => a._value == b._value;
+    public static bool operator !=(Double2 a, Double2 b) => a._value != b._value;
 
     public static Double2 operator +(Double2 a, Double2 b) => new(a._value + b._value);
     public static Double2 operator -(Double2 a, Double2 b) => new(a._value - b._value);
