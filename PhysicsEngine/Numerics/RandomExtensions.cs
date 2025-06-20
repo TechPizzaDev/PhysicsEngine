@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Numerics;
 
-namespace PhysicsEngine
+namespace PhysicsEngine.Numerics
 {
     public static class RandomExtensions
     {
@@ -19,12 +19,12 @@ namespace PhysicsEngine
 
         public static float NextAngle(this Random random)
         {
-            return NextSingle(random, -MathF.PI, MathF.PI);
+            return random.NextSingle(-MathF.PI, MathF.PI);
         }
 
         public static Vector2 NextUnitVector(this Random random)
         {
-            float angle = NextAngle(random);
+            float angle = random.NextAngle();
             (float sin, float cos) = MathF.SinCos(angle);
             return new Vector2(cos, sin);
         }

@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 using PhysicsEngine.Collision;
+using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine;

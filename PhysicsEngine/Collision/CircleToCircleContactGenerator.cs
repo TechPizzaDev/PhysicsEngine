@@ -1,4 +1,5 @@
-﻿using PhysicsEngine.Shapes;
+﻿using PhysicsEngine.Numerics;
+using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine.Collision;
 

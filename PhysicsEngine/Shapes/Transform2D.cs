@@ -1,4 +1,6 @@
-﻿namespace PhysicsEngine.Shapes;
+﻿using PhysicsEngine.Numerics;
+
+namespace PhysicsEngine.Shapes;
 
 public struct Transform2D : ITransform2D
 {

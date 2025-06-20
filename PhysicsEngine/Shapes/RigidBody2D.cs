@@ -1,4 +1,6 @@
-﻿namespace PhysicsEngine.Shapes;
+﻿using PhysicsEngine.Numerics;
+
+namespace PhysicsEngine.Shapes;
 
 public struct RigidBody2D : IRigidBody2D
 {

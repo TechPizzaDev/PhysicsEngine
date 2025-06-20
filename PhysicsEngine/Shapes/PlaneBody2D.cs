@@ -1,4 +1,6 @@
-﻿namespace PhysicsEngine.Shapes;
+﻿using PhysicsEngine.Numerics;
+
+namespace PhysicsEngine.Shapes;
 
 public readonly struct PlaneBody2D : ITransform2D, IRigidBody2D
 {

@@ -1,4 +1,6 @@
-﻿namespace PhysicsEngine.Collision;
+﻿using PhysicsEngine.Numerics;
+
+namespace PhysicsEngine.Collision;
 
 public struct Contact2D
 {

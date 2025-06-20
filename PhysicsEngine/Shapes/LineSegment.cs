@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.Intrinsics;
+using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
