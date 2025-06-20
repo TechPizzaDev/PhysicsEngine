@@ -2,7 +2,7 @@
 
 namespace PhysicsEngine.Shapes;
 
-public interface IShape2D : ITransform2D
+public interface IShape2D
 {
     Bound2 GetBounds();
 

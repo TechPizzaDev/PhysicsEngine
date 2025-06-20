@@ -3,7 +3,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct FluidZone : IZone2D
+public struct FluidZone : IZone2D, ITransform2D
 {
     public Bound2 Bounds;
     public double Density;
