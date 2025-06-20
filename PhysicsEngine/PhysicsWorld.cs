@@ -20,6 +20,9 @@ public class PhysicsWorld
 
     public Storage<Plane2D> _planes = new();
 
+    public Storage<WindZone> _windZones = new();
+    public Storage<FluidZone> _fluidZones = new();
+
     public Double2 Gravity = new(0, -9.82);
 
     public PhysicsWorld(Storage<CircleBody> bodies)
@@ -27,6 +30,30 @@ public class PhysicsWorld
         _bodies = bodies;
 
         _planes.Add() = new Plane2D(new Double2(0, -1), 0);
+        
+        _windZones.Add() = new WindZone()
+        {
+            Bounds = new Bound2(new RectangleF(0, 0, 10000, 500)),
+            Speed = 100f,
+            Direction = new Double2(0, 1f),
+            Drag = 1.05,
+            Density = 1.22,
+        };
+
+        _windZones.Add() = new WindZone()
+        {
+            Bounds = new Bound2(new RectangleF(500, 0, 10000, 5000)),
+            Speed = 100f,
+            Direction = new Double2(0, 1f),
+            Drag = 1.05,
+            Density = 1.22,
+        };
+
+        _fluidZones.Add() = new FluidZone()
+        {
+            Bounds = new Bound2(new RectangleF(-10000, 0, 10000, 500)),
+            Density = 997,
+        };
     }
 
     public void FixedUpdate(double deltaTime)
@@ -35,6 +62,9 @@ public class PhysicsWorld
             return;
 
         Span<CircleBody> bodies = _bodies.AsSpan();
+        ApplyZone(_windZones.AsSpan(), bodies);
+        ApplyZone(_fluidZones.AsSpan(), bodies);
+
         _circleContacts.Clear();
 
         CircleToCircleContactGenerator gen1 = new();
@@ -51,6 +81,29 @@ public class PhysicsWorld
 
         Span<PlaneBody2D> planeBodies = MemoryMarshal.Cast<Plane2D, PlaneBody2D>(planes);
         SolveContacts(errorReduction, _planeContacts.AsSpan(), bodies, planeBodies);
+    }
+
+    private void ApplyZone<TZone, TBody>(Span<TZone> zones, Span<TBody> bodies)
+        where TZone : IZone2D
+        where TBody : IRigidBody2D, IShape2D
+    {
+        Double2 gravity = Gravity;
+
+        foreach (ref TZone zone in zones)
+        {
+            Bound2 zoneBounds = zone.GetBounds();
+
+            foreach (ref TBody body in bodies)
+            {
+                Bound2 intersection = zoneBounds.Intersect(body.GetBounds());
+                if (!intersection.HasArea())
+                    continue;
+
+                // TODO: use more accurate intersection area?
+                double area = intersection.GetArea();
+                zone.Apply(ref body, area, gravity);
+            }
+        }
     }
 
     private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane)
@@ -80,6 +133,16 @@ public class PhysicsWorld
         foreach (Plane2D plane in _planes.AsSpan())
         {
             DrawPlane(spriteBatch, planeWidth, plane);
+        }
+
+        foreach (ref WindZone zone in _windZones.AsSpan())
+        {
+            DrawWindZone(spriteBatch, zone);
+        }
+
+        foreach (ref FluidZone zone in _fluidZones.AsSpan())
+        {
+            DrawFluidZone(spriteBatch, zone);
         }
 
         int flairLife = 20;
