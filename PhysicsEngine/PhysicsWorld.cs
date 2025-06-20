@@ -23,6 +23,8 @@ public class PhysicsWorld
     public Storage<WindZone> _windZones = new();
     public Storage<FluidZone> _fluidZones = new();
 
+    public Storage<ExplosionBody2D> _explosions = new();
+
     public Double2 Gravity = new(0, -9.82);
 
     public PhysicsWorld(Storage<CircleBody> bodies)
@@ -30,7 +32,7 @@ public class PhysicsWorld
         _bodies = bodies;
 
         _planes.Add() = new Plane2D(new Double2(0, -1), 0);
-        
+
         _windZones.Add() = new WindZone()
         {
             Bounds = new Bound2(new RectangleF(0, 0, 10000, 500)),
@@ -54,6 +56,14 @@ public class PhysicsWorld
             Bounds = new Bound2(new RectangleF(-10000, 0, 10000, 500)),
             Density = 997,
         };
+
+        _explosions.Add() = new ExplosionBody2D()
+        {
+            Transform = new() { Position = new Double2(0, 3000) },
+            Radius = 4000,
+            Force = 100_000_000_000,
+            Interval = 3,
+        };
     }
 
     public void FixedUpdate(double deltaTime)
@@ -64,6 +74,10 @@ public class PhysicsWorld
         Span<CircleBody> bodies = _bodies.AsSpan();
         ApplyZone(_windZones.AsSpan(), bodies);
         ApplyZone(_fluidZones.AsSpan(), bodies);
+
+        Span<ExplosionBody2D> explosions = _explosions.AsSpan();
+        UpdateExplosions(deltaTime, explosions);
+        ApplyExplosions(explosions, bodies);
 
         _circleContacts.Clear();
 
@@ -105,6 +119,27 @@ public class PhysicsWorld
         }
     }
 
+    private static void UpdateExplosions(double deltaTime, Span<ExplosionBody2D> explosions)
+    {
+        foreach (ref ExplosionBody2D explosion in explosions)
+        {
+            explosion.Update(deltaTime);
+        }
+    }
+
+    private static void ApplyExplosions<T>(Span<ExplosionBody2D> explosions, Span<T> bodies)
+        where T : IRigidBody2D, ITransform2D
+    {
+        foreach (ref ExplosionBody2D explosion in explosions)
+        {
+            if (!explosion.ShouldApply)
+                continue;
+
+            foreach (ref T body in bodies)
+                explosion.Apply(ref body);
+        }
+    }
+
     private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane)
     {
         Vector2 planeCenter = (Vector2) (plane.Normal * plane.D);
@@ -126,6 +161,30 @@ public class PhysicsWorld
         spriteBatch.DrawRectangle(rect, new Color(Color.DeepSkyBlue, 200));
     }
 
+    private static void DrawExplosionBody(SpriteBatch spriteBatch, in ExplosionBody2D explosion)
+    {
+        Vector2 center = (Vector2) explosion.Position;
+        float radius = (float) explosion.Radius;
+        int sides = 100;
+
+        int progress = (int) Math.Clamp((explosion.Time / explosion.Interval) * sides, 0, sides);
+
+        DrawCircle(spriteBatch, center, radius, sides, sides - progress, Color.Yellow, 2);
+        DrawCircle(spriteBatch, center, radius - 3, sides, progress, Color.Red, 4, false);
+    }
+
+    private static void DrawCircle(
+        SpriteBatch spriteBatch, Vector2 center, float radius, int sides, int count, Color color,
+        float thickness = 1f,
+        bool clockwise = true,
+        float start = -MathF.PI / 2,
+        float layerDepth = 0)
+    {
+        var points = new EllipseEnumerable(new Vector2(radius), sides, count + 1, start, clockwise);
+        bool connect = count - 1 == sides;
+        spriteBatch.DrawPolygon(center, points, color, thickness, layerDepth, connect);
+    }
+
     public void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
         double planeWidth = 10000;
@@ -142,6 +201,11 @@ public class PhysicsWorld
         foreach (ref FluidZone zone in _fluidZones.AsSpan())
         {
             DrawFluidZone(spriteBatch, zone);
+        }
+
+        foreach (ref ExplosionBody2D explosion in _explosions.AsSpan())
+        {
+            DrawExplosionBody(spriteBatch, explosion);
         }
 
         int flairLife = 20;

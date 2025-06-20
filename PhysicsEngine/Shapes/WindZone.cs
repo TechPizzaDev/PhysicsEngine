@@ -24,7 +24,7 @@ public struct WindZone : IZone2D, ITransform2D
         where T : IShape2D, IRigidBody2D
     {
         double area = body.GetArea();
-        double windForce = 0.5 * Density * Speed * Speed * Drag * area;
+        double windForce = 0.5 * Density * (Speed * Speed) * Drag * area;
         Double2 force = Direction * windForce;
         body.ApplyForce(force);
     }
