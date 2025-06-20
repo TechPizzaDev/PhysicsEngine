@@ -18,10 +18,12 @@ public struct FluidZone : IZone2D, ITransform2D
 
     public readonly Bound2 GetBounds() => Bounds;
 
-    public readonly void Apply<T>(ref T body, double area, Double2 gravity)
-         where T : IRigidBody2D
+    public readonly void Apply<T>(ref T body, Bound2 intersection, Double2 gravity)
+         where T : IShape2D, IRigidBody2D
     {
-        Double2 force = (Density * area / Math.PI) * -gravity;
+        // TODO: use more accurate intersection?
+        double area = intersection.GetArea() / Math.PI;
+        Double2 force = (Density * area) * -gravity;
         body.ApplyForce(force);
     }
 }

@@ -20,9 +20,10 @@ public struct WindZone : IZone2D, ITransform2D
 
     public readonly Bound2 GetBounds() => Bounds;
 
-    public readonly void Apply<T>(ref T body, double area, Double2 gravity)
-        where T : IRigidBody2D
+    public readonly void Apply<T>(ref T body, Bound2 intersection, Double2 gravity)
+        where T : IShape2D, IRigidBody2D
     {
+        double area = body.GetArea();
         double windForce = 0.5 * Density * Speed * Speed * Drag * area;
         Double2 force = Direction * windForce;
         body.ApplyForce(force);

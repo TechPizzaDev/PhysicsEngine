@@ -99,9 +99,8 @@ public class PhysicsWorld
                 if (!intersection.HasArea())
                     continue;
 
-                // TODO: use more accurate intersection area?
-                double area = intersection.GetArea();
-                zone.Apply(ref body, area, gravity);
+                // TODO: use more accurate intersection?
+                zone.Apply(ref body, intersection, gravity);
             }
         }
     }
