@@ -3,7 +3,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct ExplosionBody2D : IShape2D, ITransform2D
+public struct ExplosionBody2D(BodyId id) : IBodyId, IShape2D, ITransform2D
 {
     public Transform2D Transform;
     public double Radius;
@@ -11,6 +11,8 @@ public struct ExplosionBody2D : IShape2D, ITransform2D
     public double Time;
     public double Interval;
     public bool ShouldApply;
+
+    public readonly BodyId Id => id;
 
     public Double2 Position
     {

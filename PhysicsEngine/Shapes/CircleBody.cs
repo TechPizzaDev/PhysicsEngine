@@ -4,7 +4,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody : IRigidBody2D, IShape2D, ITransform2D
+public struct CircleBody(BodyId id) : IBodyId, IRigidBody2D, IShape2D, ITransform2D
 {
     public Transform2D Transform;
     public RigidBody2D RigidBody;
@@ -15,6 +15,8 @@ public struct CircleBody : IRigidBody2D, IShape2D, ITransform2D
     public Color Color;
 
     public Trail trail;
+
+    public readonly BodyId Id => id;
 
     public readonly Double2 Velocity => RigidBody.Velocity;
 
@@ -33,7 +35,7 @@ public struct CircleBody : IRigidBody2D, IShape2D, ITransform2D
     public readonly Bound2 GetBounds() => Circle.GetBounds();
 
     public readonly double GetArea() => Circle.GetArea();
-    
+
     public void ApplyForce(Double2 force) => RigidBody.ApplyForce(force);
 
     public void ApplyImpulse(Double2 impulse, Double2 contactVector) => RigidBody.ApplyImpulse(impulse, contactVector);

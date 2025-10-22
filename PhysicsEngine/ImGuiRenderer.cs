@@ -13,7 +13,7 @@ namespace PhysicsEngine;
 
 public class ImGuiRenderer
 {
-    public static readonly VertexDeclaration VertDecl = new VertexDeclaration(
+    public static readonly VertexDeclaration VertDecl = new(
         Unsafe.SizeOf<ImDrawVert>(),
         // Position
         new VertexElement(0, VertexElementFormat.Vector2, VertexElementUsage.Position, 0),

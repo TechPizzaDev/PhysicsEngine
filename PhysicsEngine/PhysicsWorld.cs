@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Numerics;
-using System.Runtime.InteropServices;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 using PhysicsEngine.Collision;
@@ -16,9 +15,9 @@ public class PhysicsWorld
 
     private Storage<ContactFlair2D> _contactFlairs = new();
 
-    private Storage<CircleBody> _bodies;
+    public Storage<CircleBody> Circles;
 
-    public Storage<Plane2D> _planes = new();
+    public Storage<PlaneBody2D> _planes = new();
 
     public Storage<WindZone> _windZones = new();
     public Storage<FluidZone> _fluidZones = new();
@@ -27,11 +26,16 @@ public class PhysicsWorld
 
     public Double2 Gravity = new(0, -9.82);
 
-    public PhysicsWorld(Storage<CircleBody> bodies)
-    {
-        _bodies = bodies;
+    public double ErrorReduction = 0.05;
 
-        _planes.Add() = new Plane2D(new Double2(0, -1), 0);
+    public PhysicsWorld()
+    {
+        Circles = new Storage<CircleBody>(128);
+
+        _planes.Add() = new PlaneBody2D()
+        {
+            Data = new Plane2D(new Double2(0, -1), 0)
+        };
 
         _windZones.Add() = new WindZone()
         {
@@ -71,7 +75,7 @@ public class PhysicsWorld
         if (deltaTime == 0)
             return;
 
-        Span<CircleBody> bodies = _bodies.AsSpan();
+        Span<CircleBody> bodies = Circles.AsSpan();
         ApplyZone(_windZones.AsSpan(), bodies);
         ApplyZone(_fluidZones.AsSpan(), bodies);
 
@@ -86,15 +90,12 @@ public class PhysicsWorld
 
         _planeContacts.Clear();
         CircleToPlaneContactGenerator gen2 = new();
-        Span<Plane2D> planes = _planes.AsSpan();
+        Span<PlaneBody2D> planes = _planes.AsSpan();
         GenerateContacts(ref gen2, bodies, planes, _planeContacts);
 
-        double errorReduction = 0.05;
+        SolveContacts(ErrorReduction, _circleContacts.AsSpan(), bodies, bodies);
 
-        SolveContacts(errorReduction, _circleContacts.AsSpan(), bodies, bodies);
-
-        Span<PlaneBody2D> planeBodies = MemoryMarshal.Cast<Plane2D, PlaneBody2D>(planes);
-        SolveContacts(errorReduction, _planeContacts.AsSpan(), bodies, planeBodies);
+        SolveContacts(ErrorReduction, _planeContacts.AsSpan(), bodies, planes);
     }
 
     private void ApplyZone<TZone, TBody>(Span<TZone> zones, Span<TBody> bodies)
@@ -188,9 +189,9 @@ public class PhysicsWorld
     public void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
         double planeWidth = 10000;
-        foreach (Plane2D plane in _planes.AsSpan())
+        foreach (ref PlaneBody2D plane in _planes.AsSpan())
         {
-            DrawPlane(spriteBatch, planeWidth, plane);
+            DrawPlane(spriteBatch, planeWidth, plane.Data);
         }
 
         foreach (ref WindZone zone in _windZones.AsSpan())

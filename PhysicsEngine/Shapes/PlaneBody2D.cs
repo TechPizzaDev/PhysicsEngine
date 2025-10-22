@@ -2,9 +2,11 @@
 
 namespace PhysicsEngine.Shapes;
 
-public readonly struct PlaneBody2D : ITransform2D, IRigidBody2D
+public struct PlaneBody2D(BodyId id) : IBodyId, ITransform2D, IRigidBody2D
 {
-    public readonly Plane2D Data;
+    public Plane2D Data;
+
+    public readonly BodyId Id => id;
 
     public Double2 Position { get => default; set { } }
 

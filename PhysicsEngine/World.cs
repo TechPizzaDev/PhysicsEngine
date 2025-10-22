@@ -12,11 +12,9 @@ using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine;
 
-public class World
+public partial class World
 {
     private PhysicsWorld _physics;
-
-    public Storage<CircleBody> circles = new(128);
 
     public Random rng;
 
@@ -49,7 +47,7 @@ public class World
     {
         rng = random;
 
-        _physics = new PhysicsWorld(circles);
+        _physics = new PhysicsWorld();
 
         for (int i = 0; i < 5; i++)
         {
@@ -71,7 +69,7 @@ public class World
 
     public ref CircleBody SpawnCircle()
     {
-        return ref SpawnCircle(rng, circles);
+        return ref SpawnCircle(rng, _physics.Circles);
     }
 
     public static ref CircleBody SpawnCircle(Random rng, Storage<CircleBody> storage)
@@ -104,16 +102,28 @@ public class World
         FixedUpdate(deltaTime);
         TotalTime += deltaTime;
 
-        ImGui.Begin("Physics");
-        ImGuiPhysics();
+        if (ImGui.Begin("Circles"))
+        {
+            ImGuiCircles();
+        }
         ImGui.End();
 
-        ImGui.Begin("Labels");
-        ImGuiLabels();
+        if (ImGui.Begin("Physics"))
+        {
+            ImGuiPhysics();
+        }
         ImGui.End();
 
-        ImGui.Begin("Lines");
-        ImGuiLines();
+        if (ImGui.Begin("Labels"))
+        {
+            ImGuiLabels();
+        }
+        ImGui.End();
+
+        if (ImGui.Begin("Lines"))
+        {
+            ImGuiLines();
+        }
         ImGui.End();
     }
 
@@ -122,6 +132,9 @@ public class World
         Vector2 gravity = (Vector2) _physics.Gravity;
         ImGui.InputFloat2("Gravity", ref gravity);
         _physics.Gravity = gravity;
+
+        ImGui.InputDouble("Time scale", ref TimeScale);
+        ImGui.InputDouble("Error reduction", ref _physics.ErrorReduction);
 
         ImGui.Checkbox("Velocity", ref _enableVelocity);
         ImGui.Checkbox("Angular", ref _enableAngular);
@@ -172,7 +185,7 @@ public class World
 
         Double2 gravity = _physics.Gravity;
 
-        foreach (ref CircleBody circle in circles.AsSpan())
+        foreach (ref CircleBody circle in _physics.Circles.AsSpan())
         {
             IntegrateBody(halfDt, gravity, ref circle);
 
@@ -200,19 +213,21 @@ public class World
 
     private void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
-        foreach (ref CircleBody circle in circles.AsSpan())
+        foreach (ref CircleBody circle in _physics.Circles.AsSpan())
         {
             DrawCircleBody(spriteBatch, scale, circle);
 
+            //spriteBatch.DrawRectangle(circle.Circle.Bounds.ToRectF(), Color.Red);
+
             if (_lineAngle)
                 DrawAngle(spriteBatch, circle);
-            
+
             if (_lineForward)
                 DrawForward(spriteBatch, circle);
-        
+
             if (_lineVelocity)
                 DrawVelocity(spriteBatch, circle);
-            
+
             DrawCircleDebugText(assets, spriteBatch, scale, _strBuilder, circle);
         }
     }
@@ -293,6 +308,7 @@ public class World
         if (_labelTorque)
             builder.AppendLine(invariant, $"T {body.Torque:0.00}");
     }
+
     private void DrawCircleDebugText(
         AssetRegistry assets, SpriteBatch spriteBatch, float scale, StringBuilder builder, in CircleBody circle)
     {

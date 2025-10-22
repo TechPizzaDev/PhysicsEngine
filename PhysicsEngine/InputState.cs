@@ -2,35 +2,27 @@
 
 namespace PhysicsEngine
 {
-    public readonly struct InputState
+    public readonly struct InputState(
+        MouseState oldMouseState,
+        MouseState newMouseState,
+        KeyboardState oldKeyState,
+        KeyboardState newKeyState)
     {
-        public MouseState OldMouseState { get; }
-        public MouseState NewMouseState { get; }
+        public MouseState OldMouseState => oldMouseState;
+        public MouseState NewMouseState => newMouseState;
 
-        public KeyboardState OldKeyState { get; }
-        public KeyboardState NewKeyState { get; }
-
-        public InputState(
-            MouseState oldMouseState,
-            MouseState newMouseState,
-            KeyboardState oldKeyState,
-            KeyboardState newKeyState)
-        {
-            OldMouseState = oldMouseState;
-            NewMouseState = newMouseState;
-            OldKeyState = oldKeyState;
-            NewKeyState = newKeyState;
-        }
+        public KeyboardState OldKeyState => oldKeyState;
+        public KeyboardState NewKeyState => newKeyState;
 
         public bool IsKeyPressed(Keys key)
         {
-            return NewKeyState.IsKeyDown(key) && OldKeyState.IsKeyUp(key);
+            return newKeyState.IsKeyDown(key) && oldKeyState.IsKeyUp(key);
         }
 
         public bool IsLeftMouseButtonPressed()
         {
-            return (NewMouseState.LeftButton == ButtonState.Pressed) 
-                && (OldMouseState.LeftButton == ButtonState.Released);
+            return (newMouseState.LeftButton == ButtonState.Pressed) 
+                && (oldMouseState.LeftButton == ButtonState.Released);
         }
     }
 }

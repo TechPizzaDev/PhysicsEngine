@@ -1,4 +1,5 @@
-﻿using PhysicsEngine.Numerics;
+﻿using System;
+using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
@@ -56,7 +57,8 @@ public struct RigidBody2D : IRigidBody2D
     public void IntegrateAngular(ref Transform2D transform, double halfDt)
     {
         IntegrateAngular(halfDt);
-        transform.Rotation += AngularVelocity * (halfDt + halfDt);
+        double rotation = transform.Rotation + AngularVelocity * (halfDt + halfDt);
+        transform.Rotation = MathG.NaiveFMod(rotation, Math.PI * 2);
     }
 
     public void ApplyForce(Double2 force)

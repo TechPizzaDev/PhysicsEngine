@@ -2,13 +2,15 @@
 
 namespace PhysicsEngine.Shapes;
 
-public struct WindZone : IZone2D, ITransform2D
+public struct WindZone(BodyId id) : IBodyId, IZone2D, ITransform2D
 {
     public Bound2 Bounds;
     public Double2 Direction;
     public double Speed;
     public double Density;
     public double Drag;
+    
+    public readonly BodyId Id => id;
 
     public Double2 Position
     {

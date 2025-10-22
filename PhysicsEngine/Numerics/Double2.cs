@@ -18,11 +18,15 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
 
     public Double2(double value) => _value = Vector128.Create(value);
 
+    public Double2(ReadOnlySpan<double> values) => _value = Vector128.Create(values);
+
     public double X => _value.GetElement(0);
 
     public double Y => _value.GetElement(1);
 
     public Vector128<double> AsVector128() => _value;
+
+    public void CopyTo(Span<double> destination) => _value.CopyTo(destination);
 
     public double Length() => Math.Sqrt(LengthSquared());
 
@@ -131,7 +135,7 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
     public static Double2 operator /(Double2 a, Double2 b) => new(a._value / b._value);
     public static Double2 operator /(Double2 a, double b) => new(a._value / b);
 
-    public static implicit operator Double2(Vector2 vector) => new(Vector128.WidenLower(vector.AsVector128()));
+    public static implicit operator Double2(Vector2 vector) => new(Vector128.WidenLower(vector.AsVector128Unsafe()));
 
-    public static explicit operator Vector2(Double2 vector) => Vector128.Narrow(vector._value, default).AsVector2();
+    public static explicit operator Vector2(Double2 vector) => Vector128.Narrow(vector._value, vector._value).AsVector2();
 }

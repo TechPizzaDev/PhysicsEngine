@@ -47,7 +47,7 @@ namespace PhysicsEngine
         private Matrix4x4 _sceneRenderMatrix;
         private Matrix4x4 _uiRenderMatrix;
 
-        private Vector2 _cameraTarget = new(0, 200);
+        private Vector2 _cameraTarget;
         private float _scale = 1.0f;
 
         private Random _worldRng = new(1234);
@@ -80,7 +80,13 @@ namespace PhysicsEngine
             _lastScroll = mouseState.Scroll;
             _lastMousePos = mouseState.Position;
 
+            ResetWorld();
+        }
+
+        private void ResetWorld()
+        {
             _world = new World(_worldRng);
+            _cameraTarget = new(0, 200);
         }
 
         private void ViewportChanged(in Viewport viewport)
@@ -161,7 +167,7 @@ namespace PhysicsEngine
 
             if (_inputState.IsKeyPressed(Keys.F5))
             {
-                _world = new World(_worldRng);
+                ResetWorld();
             }
 
             if (_inputState.NewKeyState.IsKeyDown(Keys.F6))
@@ -181,7 +187,7 @@ namespace PhysicsEngine
             if ((input.NewKeyState.Modifiers & KeyModifiers.Control) != 0)
             {
                 float scaleDelta = _scrollDelta.Y * 0.001f * ((_scale + 1) / 2f);
-                _scale = MathHelper.Clamp(_scale + scaleDelta, MinZoom, MaxZoom);
+                _scale = Math.Clamp(_scale + scaleDelta, MinZoom, MaxZoom);
 
                 if ((input.NewMouseState.LeftButton & ButtonState.Pressed) != 0)
                     _cameraTarget += _mousePosDelta / new Vector2(_scale, -_scale);
