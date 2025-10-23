@@ -46,7 +46,7 @@ public class PhysicsWorld
             Direction = new Double2(0, 1f),
             Drag = 1.05,
             Density = 1.22,
-            TurbulenceAngle = Math.PI * 1.25,
+            TurbulenceAngle = Math.PI * 0.5,
             TurbulenceIntensity = 1f,
             TurbulenceScale = new Double2(0.001),
             TurbulenceDepth = 0.1,
@@ -59,7 +59,7 @@ public class PhysicsWorld
             Direction = new Double2(0, 1f),
             Drag = 1.05,
             Density = 1.22,
-            TurbulenceAngle = Math.PI * 1.25,
+            TurbulenceAngle = Math.PI * 0.5,
             TurbulenceIntensity = 1f,
             TurbulenceScale = new Double2(0.001),
             TurbulenceDepth = 0.1,
@@ -171,10 +171,13 @@ public class PhysicsWorld
             return;
         }
 
-        int cols = (int) float.Round(rect.Width / lineSpacing.X);
-        int rows = (int) float.Round(rect.Height / lineSpacing.Y);
-        Vector2 origin = Vector2.Round(rect.Position / lineSpacing) * lineSpacing + lineSpacing / 2;
-
+        int cols = (int) float.Floor(rect.Width / lineSpacing.X);
+        int rows = (int) float.Floor(rect.Height / lineSpacing.Y);
+        Vector2 origin = rect.Position / lineSpacing;
+        origin.X = float.Ceiling(origin.X);
+        origin.Y = float.Ceiling(origin.Y);
+        origin = origin * lineSpacing + lineSpacing / 2;
+        
         var color = QuadCorner<Color>.Vertical(new(0, 1f, 0, WindFlowLineOpacity), new(0, 255, 0, 0));
 
         for (int y = 0; y < rows; y++)

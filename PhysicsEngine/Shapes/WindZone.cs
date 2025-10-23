@@ -56,7 +56,7 @@ public struct WindZone(BodyId id) : IBodyId, IZone2D, ITransform2D
         Vector2 p = (Vector2) (position * TurbulenceScale);
         
         double noise = MathG.Simplex(p.X, p.Y, (float) Time, TurbulenceSeed);
-        return (noise * TurbulenceAngle, noise * TurbulenceIntensity);
+        return (noise * TurbulenceAngle, (noise + 2) / 3f * TurbulenceIntensity);
     }
 
     public void Update(double deltaTime)
