@@ -3,7 +3,7 @@
     "PhysicsEngine": {
       "commandName": "Project",
       "environmentVariables": {
-        "DOTNET_JitDisasm": "Set",
+        "DOTNET_JitDisasm": "*Simplex*",
         "DOTNET_JitStdOutFile": "jit.x86asm",
         "DOTNET_JitDisasmOnlyOptimized": "1",
         "DOTNET_JitDisasmDiffable": "1"

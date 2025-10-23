@@ -94,10 +94,10 @@ public partial class World
         return ref circle;
     }
 
-    public void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransformMatrix)
+    public void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
     {
-        mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransformMatrix);
-
+        mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransform);
+        
         double deltaTime = 1 / 60.0 * TimeScale;
         FixedUpdate(deltaTime);
         TotalTime += deltaTime;
@@ -159,6 +159,8 @@ public partial class World
         ImGui.Checkbox("Velocity", ref _lineVelocity);
         ImGui.Checkbox("Angle", ref _lineAngle);
         ImGui.Checkbox("Forward", ref _lineForward);
+
+        ImGui.SliderFloat("Wind Flow", ref _physics.WindFlowLineOpacity, 0f, 1f);
     }
 
     private void IntegrateBody(double halfDt, Double2 gravity, ref CircleBody circle)

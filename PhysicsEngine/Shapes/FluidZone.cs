@@ -28,4 +28,8 @@ public struct FluidZone(BodyId id) : IBodyId, IZone2D, ITransform2D
         Double2 force = (Density * area) * -gravity;
         body.ApplyForce(force);
     }
+
+    public readonly void Update(double deltaTime)
+    {
+    }
 }

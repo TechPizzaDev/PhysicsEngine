@@ -2,7 +2,7 @@
 
 namespace PhysicsEngine.Numerics;
 
-public static class MathG
+public static partial class MathG
 {
     public static T NaiveFMod<T>(T n, T d)
         where T : IFloatingPoint<T>

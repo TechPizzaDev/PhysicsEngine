@@ -39,6 +39,12 @@ public readonly struct Bound2 : IEquatable<Bound2>, ISpanFormattable, IShape2D
         Vector128<double> size = Max.AsVector128() - Min.AsVector128();
         return size.GetElement(1) * size.GetElement(0);
     }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Double2 GetCenter()
+    {
+        return Position + Size / 2;
+    }
 
     Bound2 IShape2D.GetBounds() => this;
 

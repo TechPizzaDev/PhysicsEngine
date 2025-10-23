@@ -43,10 +43,12 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
     public Double2 Round() => new(Vector128.Round(_value));
 
     public Double2 Floor() => new(Vector128.Floor(_value));
-    
+
     public Double2 Min(Double2 other) => new(Vector128.Min(_value, other._value));
-    
+
     public Double2 Max(Double2 other) => new(Vector128.Max(_value, other._value));
+
+    public Double2 Rotate(Double2 sinCos) => this * sinCos + RotateCW() * sinCos;
 
     public bool Equals(Double2 other) => _value == other._value;
 
@@ -117,6 +119,12 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
     public static Double2 MulAdd(Double2 a, Double2 b, Double2 c)
     {
         return new(Vector128.MultiplyAddEstimate(a._value, b._value, c._value));
+    }
+
+    public static Double2 SinCos(double angle)
+    {
+        (double sin, double cos) = Math.SinCos(angle);
+        return new Double2(sin, cos);
     }
 
     private static Vector128<double> Transpose(Vector128<double> v) => Vector128.Shuffle(v, Vector128.Create(1, 0));

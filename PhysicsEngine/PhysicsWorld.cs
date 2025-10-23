@@ -28,6 +28,8 @@ public class PhysicsWorld
 
     public double ErrorReduction = 0.05;
 
+    public float WindFlowLineOpacity = 0.5f;
+
     public PhysicsWorld()
     {
         Circles = new Storage<CircleBody>(128);
@@ -44,6 +46,10 @@ public class PhysicsWorld
             Direction = new Double2(0, 1f),
             Drag = 1.05,
             Density = 1.22,
+            TurbulenceAngle = Math.PI * 1.25,
+            TurbulenceIntensity = 1f,
+            TurbulenceScale = new Double2(0.001),
+            TurbulenceDepth = 0.1,
         };
 
         _windZones.Add() = new WindZone()
@@ -53,6 +59,11 @@ public class PhysicsWorld
             Direction = new Double2(0, 1f),
             Drag = 1.05,
             Density = 1.22,
+            TurbulenceAngle = Math.PI * 1.25,
+            TurbulenceIntensity = 1f,
+            TurbulenceScale = new Double2(0.001),
+            TurbulenceDepth = 0.1,
+            TurbulenceSeed = 1234,
         };
 
         _fluidZones.Add() = new FluidZone()
@@ -61,13 +72,13 @@ public class PhysicsWorld
             Density = 997,
         };
 
-        _explosions.Add() = new ExplosionBody2D()
-        {
-            Transform = new() { Position = new Double2(0, 3000) },
-            Radius = 4000,
-            Force = 100_000_000_000,
-            Interval = 3,
-        };
+        //_explosions.Add() = new ExplosionBody2D()
+        //{
+        //    Transform = new() { Position = new Double2(0, 3000) },
+        //    Radius = 4000,
+        //    Force = 100_000_000_000,
+        //    Interval = 3,
+        //};
     }
 
     public void FixedUpdate(double deltaTime)
@@ -76,12 +87,10 @@ public class PhysicsWorld
             return;
 
         Span<CircleBody> bodies = Circles.AsSpan();
-        ApplyZone(_windZones.AsSpan(), bodies);
-        ApplyZone(_fluidZones.AsSpan(), bodies);
 
-        Span<ExplosionBody2D> explosions = _explosions.AsSpan();
-        UpdateExplosions(deltaTime, explosions);
-        ApplyExplosions(explosions, bodies);
+        ApplyZone(deltaTime, _windZones.AsSpan(), bodies);
+        ApplyZone(deltaTime, _fluidZones.AsSpan(), bodies);
+        ApplyExplosions(deltaTime, _explosions.AsSpan(), bodies);
 
         _circleContacts.Clear();
 
@@ -98,7 +107,7 @@ public class PhysicsWorld
         SolveContacts(ErrorReduction, _planeContacts.AsSpan(), bodies, planes);
     }
 
-    private void ApplyZone<TZone, TBody>(Span<TZone> zones, Span<TBody> bodies)
+    private void ApplyZone<TZone, TBody>(double deltaTime, Span<TZone> zones, Span<TBody> bodies)
         where TZone : IZone2D
         where TBody : IRigidBody2D, IShape2D
     {
@@ -106,6 +115,8 @@ public class PhysicsWorld
 
         foreach (ref TZone zone in zones)
         {
+            zone.Update(deltaTime);
+
             Bound2 zoneBounds = zone.GetBounds();
 
             foreach (ref TBody body in bodies)
@@ -120,19 +131,13 @@ public class PhysicsWorld
         }
     }
 
-    private static void UpdateExplosions(double deltaTime, Span<ExplosionBody2D> explosions)
-    {
-        foreach (ref ExplosionBody2D explosion in explosions)
-        {
-            explosion.Update(deltaTime);
-        }
-    }
-
-    private static void ApplyExplosions<T>(Span<ExplosionBody2D> explosions, Span<T> bodies)
+    private static void ApplyExplosions<T>(double deltaTime, Span<ExplosionBody2D> explosions, Span<T> bodies)
         where T : IRigidBody2D, ITransform2D
     {
         foreach (ref ExplosionBody2D explosion in explosions)
         {
+            explosion.Update(deltaTime);
+
             if (!explosion.ShouldApply)
                 continue;
 
@@ -148,11 +153,43 @@ public class PhysicsWorld
         spriteBatch.DrawLine(planeCenter - planeOrthog, planeCenter + planeOrthog, new Color(Color.Purple, 200), 2f);
     }
 
-    private static void DrawWindZone(SpriteBatch spriteBatch, in WindZone zone)
+    private void DrawWindZone(
+        SpriteBatch spriteBatch, Vector2 lineSpacing, RectangleF viewport, float scale, in WindZone zone)
     {
-        RectangleF rect = zone.Bounds.ToRectF();
-        spriteBatch.FillRectangle(rect, new Color(Color.Lime, 24));
-        spriteBatch.DrawRectangle(rect, new Color(Color.LimeGreen, 200));
+        RectangleF fullRect = zone.Bounds.ToRectF();
+        RectangleF rect = RectangleF.Intersection(fullRect, viewport);
+        if (rect.IsEmpty)
+        {
+            return;
+        }
+
+        spriteBatch.FillRectangle(fullRect, new Color(Color.Lime, 24));
+        spriteBatch.DrawRectangle(fullRect, new Color(Color.LimeGreen, 200));
+
+        if (WindFlowLineOpacity <= 0f)
+        {
+            return;
+        }
+
+        int cols = (int) float.Round(rect.Width / lineSpacing.X);
+        int rows = (int) float.Round(rect.Height / lineSpacing.Y);
+        Vector2 origin = Vector2.Round(rect.Position / lineSpacing) * lineSpacing + lineSpacing / 2;
+
+        var color = QuadCorner<Color>.Vertical(new(0, 1f, 0, WindFlowLineOpacity), new(0, 255, 0, 0));
+
+        for (int y = 0; y < rows; y++)
+        {
+            for (int x = 0; x < cols; x++)
+            {
+                Vector2 p0 = origin + new Vector2(x, y) * lineSpacing;
+                (double angle, double strength) = zone.EvaluateTurbulence(p0);
+
+                Double2 dir = zone.Direction.Rotate(Double2.SinCos(angle));
+                Vector2 p1 = p0 + (Vector2) (dir * lineSpacing * strength);
+
+                spriteBatch.DrawLine(p0, p1, color, 1f / scale);
+            }
+        }
     }
 
     private static void DrawFluidZone(SpriteBatch spriteBatch, in FluidZone zone)
@@ -188,15 +225,21 @@ public class PhysicsWorld
 
     public void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
+        Matrix4x4.Invert(spriteBatch.SpriteEffect.GetFinalMatrix(), out Matrix4x4 invProj);
+        Vector2 viewMin = Vector2.Transform(new Vector2(-1, 1), invProj);
+        Vector2 viewMax = Vector2.Transform(new Vector2(1, -1), invProj);
+        RectangleF viewport = RectangleF.FromPoints(viewMin, viewMax);
+
         double planeWidth = 10000;
         foreach (ref PlaneBody2D plane in _planes.AsSpan())
         {
             DrawPlane(spriteBatch, planeWidth, plane.Data);
         }
 
+        Vector2 lineSpacing = new(50 / (scale * 2));
         foreach (ref WindZone zone in _windZones.AsSpan())
         {
-            DrawWindZone(spriteBatch, zone);
+            DrawWindZone(spriteBatch, lineSpacing, viewport, scale, zone);
         }
 
         foreach (ref FluidZone zone in _fluidZones.AsSpan())

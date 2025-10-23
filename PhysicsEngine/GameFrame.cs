@@ -43,7 +43,7 @@ namespace PhysicsEngine
 
         private Matrix4x4 _playerMatrix;
         private Matrix4x4 _sceneTransformMatrix;
-        private Matrix4x4 _inverseSceneTransformMatrix;
+        private Matrix4x4 _inverseSceneTransform;
         private Matrix4x4 _sceneRenderMatrix;
         private Matrix4x4 _uiRenderMatrix;
 
@@ -111,9 +111,6 @@ namespace PhysicsEngine
                     (int) (viewport.Width * _uiRenderScale),
                     (int) (viewport.Height * _uiRenderScale)),
                 DepthFormat.None);
-
-            Matrix4x4 projection = Matrix4x4.CreateOrthographicOffCenter(
-                0, viewport.Width, viewport.Height, 0, -1000, 1000);
         }
 
         private RenderTarget2D CreateRenderTarget(Size size, DepthFormat depthFormat)
@@ -214,11 +211,11 @@ namespace PhysicsEngine
                 _sceneTransformMatrix *
                 Matrix4x4.CreateScale(_uiRenderScale);
 
-            Matrix4x4.Invert(_sceneTransformMatrix, out _inverseSceneTransformMatrix);
+            Matrix4x4.Invert(_sceneTransformMatrix, out _inverseSceneTransform);
 
             _imguiRenderer.BeginLayout(input, time, _lastViewport.Bounds.Size.ToVector2(), new Vector2(1));
 
-            _world.Update(input, time, _inverseSceneTransformMatrix);
+            _world.Update(input, time, _inverseSceneTransform);
 
             _imguiRenderer.EndLayout();
 
@@ -233,6 +230,8 @@ namespace PhysicsEngine
                 ViewportChanged(currentViewport);
                 _lastViewport = currentViewport;
             }
+
+
 
             GraphicsDevice.SetRenderTarget(_backgroundTarget, Color.Transparent.ToVector4());
             RenderBackground(_spriteBatch, time, currentViewport);
