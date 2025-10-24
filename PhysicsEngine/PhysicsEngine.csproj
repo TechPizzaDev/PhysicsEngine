@@ -17,6 +17,7 @@
   
   <ItemGroup>
     <ProjectReference Include="..\..\..\..\Repos\TechPizzaDev\MonoGame\MonoGame.Framework\MonoGame.Framework.Windows.csproj" />
+    <ProjectReference Include="..\PhysicsEngine.Numerics\PhysicsEngine.Numerics.csproj" />
   </ItemGroup>
 
   <ItemGroup>
