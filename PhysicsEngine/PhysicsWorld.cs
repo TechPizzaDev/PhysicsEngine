@@ -27,6 +27,11 @@ public class PhysicsWorld
     public Double2 Gravity = new(0, -9.82);
 
     public double ErrorReduction = 0.05;
+    
+    public bool EnableVelocity = true;
+    public bool EnableAngular = true;
+
+    public bool LineTrail;
 
     public float WindFlowLineOpacity = 0.5f;
 
@@ -85,6 +90,8 @@ public class PhysicsWorld
     {
         if (deltaTime == 0)
             return;
+
+        IntegrateBodies(deltaTime);
 
         Span<CircleBody> bodies = GetStorage<CircleBody>().AsSpan();
 
@@ -162,6 +169,45 @@ public class PhysicsWorld
     }
 
     private static void ThrowDuplicateId() => throw new InvalidOperationException();
+
+    #endregion
+
+    #region Force integration
+
+    private void IntegrateBody(double halfDt, Double2 gravity, ref CircleBody circle)
+    {
+        if (EnableVelocity)
+        {
+            circle.RigidBody.IntegrateVelocity(ref circle.Transform, gravity, halfDt);
+            circle.RigidBody.IntegrateVelocity(gravity, halfDt);
+        }
+
+        if (EnableAngular)
+        {
+            circle.RigidBody.IntegrateAngular(halfDt);
+            circle.RigidBody.IntegrateAngular(ref circle.Transform, halfDt);
+        }
+
+        circle.RigidBody.Force = default;
+        circle.RigidBody.Torque = 0;
+    }
+
+    private void IntegrateBodies(double deltaTime)
+    {
+        double halfDt = deltaTime * 0.5;
+
+        Double2 gravity = Gravity;
+
+        foreach (ref CircleBody circle in GetStorage<CircleBody>().AsSpan())
+        {
+            IntegrateBody(halfDt, gravity, ref circle);
+
+            if (LineTrail)
+            {
+                circle.trail.Update((Vector2) circle.Transform.Position);
+            }
+        }
+    }
 
     #endregion
 

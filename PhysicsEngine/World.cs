@@ -31,9 +31,6 @@ public partial class World
 
     public float HoverRadius = 5f;
 
-    private bool _enableVelocity = true;
-    private bool _enableAngular = true;
-
     private bool _labelPosition;
     private bool _labelAngle;
     private bool _labelRadius;
@@ -44,7 +41,6 @@ public partial class World
     private bool _labelInertia;
     private bool _labelTorque;
 
-    private bool _lineTrail = false;
     private bool _lineVelocity = false;
     private bool _lineAngle = false;
     private bool _lineForward = false;
@@ -169,8 +165,8 @@ public partial class World
         ExGui.DragScalar("Error reduction", ref _physics.ErrorReduction);
         ImGui.PopItemWidth();
 
-        ImGui.Checkbox("Velocity", ref _enableVelocity);
-        ImGui.Checkbox("Angular", ref _enableAngular);
+        ImGui.Checkbox("Velocity", ref _physics.EnableVelocity);
+        ImGui.Checkbox("Angular", ref _physics.EnableAngular);
     }
 
     private void ImGuiLabels()
@@ -188,7 +184,7 @@ public partial class World
 
     private void ImGuiLines()
     {
-        ImGui.Checkbox("Trails", ref _lineTrail);
+        ImGui.Checkbox("Trails", ref _physics.LineTrail);
         ImGui.Checkbox("Velocity", ref _lineVelocity);
         ImGui.Checkbox("Angle", ref _lineAngle);
         ImGui.Checkbox("Forward", ref _lineForward);
@@ -200,40 +196,8 @@ public partial class World
 
     #endregion
 
-    private void IntegrateBody(double halfDt, Double2 gravity, ref CircleBody circle)
-    {
-        if (_enableVelocity)
-        {
-            circle.RigidBody.IntegrateVelocity(ref circle.Transform, gravity, halfDt);
-            circle.RigidBody.IntegrateVelocity(gravity, halfDt);
-        }
-
-        if (_enableAngular)
-        {
-            circle.RigidBody.IntegrateAngular(halfDt);
-            circle.RigidBody.IntegrateAngular(ref circle.Transform, halfDt);
-        }
-
-        circle.RigidBody.Force = default;
-        circle.RigidBody.Torque = 0;
-    }
-
     public void FixedUpdate(double deltaTime)
     {
-        double halfDt = deltaTime * 0.5;
-
-        Double2 gravity = _physics.Gravity;
-
-        foreach (ref CircleBody circle in _physics.GetStorage<CircleBody>().AsSpan())
-        {
-            IntegrateBody(halfDt, gravity, ref circle);
-
-            if (_lineTrail)
-            {
-                circle.trail.Update((Vector2) circle.Transform.Position);
-            }
-        }
-
         long startStamp = Stopwatch.GetTimestamp();
         _physics.FixedUpdate(deltaTime);
         TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
@@ -282,7 +246,7 @@ public partial class World
         int sides = int.Clamp((int) ((float) circle.Radius * scale + 3.5f), 6, 42);
         spriteBatch.DrawCircle(center, radius, sides, circle.Color, 4f);
 
-        if (_lineTrail)
+        if (_physics.LineTrail)
         {
             circle.trail.Draw(spriteBatch, circle.Color, (float) circle.Radius * 0.4f);
         }
