@@ -2,7 +2,9 @@
 
 namespace PhysicsEngine.Shapes;
 
-public interface IBodyId
+public interface IShapeId
 {
+    static abstract ShapeKind Kind { get; }
+
     BodyId Id { get; }
 }

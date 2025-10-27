@@ -10,19 +10,31 @@ namespace PhysicsEngine;
 
 public class PhysicsWorld
 {
+    #region Contacts 
+
     private Storage<BodyContact2D> _circleContacts = new();
     private Storage<BodyContact2D> _planeContacts = new();
 
     private Storage<ContactFlair2D> _contactFlairs = new();
 
-    public Storage<CircleBody> Circles;
+    #endregion
 
+    #region Bodies
+
+    public Storage<CircleBody> Circles = new();
     public Storage<PlaneBody2D> _planes = new();
+    public Storage<ExplosionBody2D> _explosions = new();
+
+    #endregion
+
+    #region Zones
 
     public Storage<WindZone> _windZones = new();
     public Storage<FluidZone> _fluidZones = new();
 
-    public Storage<ExplosionBody2D> _explosions = new();
+    #endregion
+
+    #region Variables
 
     public Double2 Gravity = new(0, -9.82);
 
@@ -30,16 +42,16 @@ public class PhysicsWorld
 
     public float WindFlowLineOpacity = 0.5f;
 
+    #endregion
+
     public PhysicsWorld()
     {
-        Circles = new Storage<CircleBody>(128);
-
-        _planes.Add() = new PlaneBody2D()
+        _planes.Add() = new PlaneBody2D(new BodyId(1))
         {
             Data = new Plane2D(new Double2(0, -1), 0)
         };
 
-        _windZones.Add() = new WindZone()
+        _windZones.Add() = new WindZone(new BodyId(1))
         {
             Bounds = new Bound2(new RectangleF(0, 0, 10000, 500)),
             Speed = 100f,
@@ -52,7 +64,7 @@ public class PhysicsWorld
             TurbulenceDepth = 0.1,
         };
 
-        _windZones.Add() = new WindZone()
+        _windZones.Add() = new WindZone(new BodyId(2))
         {
             Bounds = new Bound2(new RectangleF(500, 0, 10000, 5000)),
             Speed = 100f,
@@ -66,19 +78,19 @@ public class PhysicsWorld
             TurbulenceSeed = 1234,
         };
 
-        _fluidZones.Add() = new FluidZone()
+        _fluidZones.Add() = new FluidZone(new BodyId(1))
         {
             Bounds = new Bound2(new RectangleF(-10000, 0, 10000, 500)),
             Density = 997,
         };
 
-        //_explosions.Add() = new ExplosionBody2D()
-        //{
-        //    Transform = new() { Position = new Double2(0, 3000) },
-        //    Radius = 4000,
-        //    Force = 100_000_000_000,
-        //    Interval = 3,
-        //};
+        _explosions.Add() = new ExplosionBody2D(new BodyId(1))
+        {
+            Transform = new() { Position = new Double2(0, 3000) },
+            Radius = 4000,
+            Force = 100_000_000_000,
+            Interval = 3,
+        };
     }
 
     public void FixedUpdate(double deltaTime)
@@ -94,7 +106,7 @@ public class PhysicsWorld
 
         _circleContacts.Clear();
 
-        CircleToCircleContactGenerator gen1 = new();
+        CircleToCircleContactGenerator gen1 = new(true, IntersectionResult.Cuts);
         GenerateContacts(ref gen1, bodies, _circleContacts);
 
         _planeContacts.Clear();
@@ -106,6 +118,8 @@ public class PhysicsWorld
 
         SolveContacts(ErrorReduction, _planeContacts.AsSpan(), bodies, planes);
     }
+
+    #region Apply Zones
 
     private void ApplyZone<TZone, TBody>(double deltaTime, Span<TZone> zones, Span<TBody> bodies)
         where TZone : IZone2D
@@ -146,6 +160,10 @@ public class PhysicsWorld
         }
     }
 
+    #endregion
+
+    #region Drawing
+
     private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane)
     {
         Vector2 planeCenter = (Vector2) (plane.Normal * plane.D);
@@ -177,7 +195,7 @@ public class PhysicsWorld
         origin.X = float.Ceiling(origin.X);
         origin.Y = float.Ceiling(origin.Y);
         origin = origin * lineSpacing + lineSpacing / 2;
-        
+
         var color = QuadCorner<Color>.Vertical(new(0, 1f, 0, WindFlowLineOpacity), new(0, 255, 0, 0));
 
         for (int y = 0; y < rows; y++)
@@ -285,6 +303,10 @@ public class PhysicsWorld
         //spriteBatch.DrawLine(flair.Point, flair.Point + flair.Direction, Color.Purple);
     }
 
+    #endregion
+
+    #region Contact solver
+
     public void SolveContacts<T1, T2>(
         double errorReduction,
         ReadOnlySpan<BodyContact2D> contacts,
@@ -378,6 +400,39 @@ public class PhysicsWorld
                         Contact = contact
                     };
                 }
+            }
+        }
+    }
+
+    #endregion
+
+    public void GetObjectsInRange(Double2 position, float radius, Storage<ShapeLocation> output)
+    {
+        CircleBody origin = new()
+        {
+            Position = position,
+            Radius = radius
+        };
+
+        GetContacts(output, ref origin, new CircleToCircleContactGenerator(false, IntersectionResult.Any), Circles.AsSpan(), ShapeKind.Circle);
+        GetContacts(output, ref origin, new CircleToPlaneContactGenerator(), _planes.AsSpan(), ShapeKind.Plane);
+        GetContacts(output, ref origin, new CircleToExplosionContactGenerator(IntersectionResult.Any), _explosions.AsSpan(), ShapeKind.Explosion);
+
+        GetContacts(output, ref origin, new CircleToShapeContactGenerator<WindZone>(), _windZones.AsSpan(), ShapeKind.WindZone);
+        GetContacts(output, ref origin, new CircleToShapeContactGenerator<FluidZone>(), _fluidZones.AsSpan(), ShapeKind.FluidZone);
+    }
+
+    private static void GetContacts<G, T1, T2>(
+        Storage<ShapeLocation> output, ref T1 origin, G generator, Span<T2> bodies, ShapeKind kind)
+        where G : IContactGenerator<T1, T2>
+        where T2 : IShapeId
+    {
+        for (int i = 0; i < bodies.Length; i++)
+        {
+            ref T2 body = ref bodies[i];
+            if (generator.Generate(ref origin, ref body, out Contact2D contact))
+            {
+                output.Add() = new ShapeLocation(kind, body.Id, contact);
             }
         }
     }

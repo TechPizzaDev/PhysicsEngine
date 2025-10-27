@@ -4,8 +4,10 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody(BodyId id) : IBodyId, IRigidBody2D, IShape2D, ITransform2D
+public struct CircleBody(BodyId id) : IShapeId, IRigidBody2D, IShape2D, ITransform2D
 {
+    public static ShapeKind Kind => ShapeKind.Circle;
+
     public Transform2D Transform;
     public RigidBody2D RigidBody;
 

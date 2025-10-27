@@ -15,6 +15,7 @@ namespace PhysicsEngine;
 public partial class World
 {
     private PhysicsWorld _physics;
+    private uint _nextCircleId = 1;
 
     public Random rng;
 
@@ -22,8 +23,12 @@ public partial class World
 
     private Vector2 mousePosition;
 
+    #region Variables
+
     public double TotalTime;
     public double TimeScale = 1f;
+
+    public float HoverRadius = 5f;
 
     private bool _enableVelocity = true;
     private bool _enableAngular = true;
@@ -43,11 +48,15 @@ public partial class World
     private bool _lineAngle = false;
     private bool _lineForward = false;
 
+    #endregion
+
     public World(Random random)
     {
         rng = random;
 
         _physics = new PhysicsWorld();
+
+        SetupEditorProxies();
 
         for (int i = 0; i < 5; i++)
         {
@@ -72,10 +81,10 @@ public partial class World
         return ref SpawnCircle(rng, _physics.Circles);
     }
 
-    public static ref CircleBody SpawnCircle(Random rng, Storage<CircleBody> storage)
+    public ref CircleBody SpawnCircle(Random rng, Storage<CircleBody> storage)
     {
         ref CircleBody circle = ref storage.Add();
-        circle = new CircleBody
+        circle = new CircleBody(new BodyId(_nextCircleId++))
         {
             Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
             Radius = rng.Next(20, 40),
@@ -97,16 +106,39 @@ public partial class World
     public void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
     {
         mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransform);
-        
+
         double deltaTime = 1 / 60.0 * TimeScale;
         FixedUpdate(deltaTime);
         TotalTime += deltaTime;
 
-        if (ImGui.Begin("Circles"))
-        {
-            ImGuiCircles();
-        }
-        ImGui.End();
+        ImGuiUpdate();
+    }
+
+    #region ImGui Editors
+
+    private Storage<ShapeLocation> _objectLocations = new();
+    private Storage<ShapeEditor> _openEditors = new();
+    private int _nextEditorId = 1;
+
+    public readonly struct ShapeEditor(int id, ShapeLocation location) : IShapeId
+    {
+        public static ShapeKind Kind => ShapeKind.Editor;
+
+        public readonly int Id = id;
+        public readonly ShapeLocation Location = location;
+
+        readonly BodyId IShapeId.Id => Location.Id;
+    }
+
+    private void ImGuiUpdate()
+    {
+        ImGuiShapeEditors();
+
+        //if (ImGui.Begin("Circles"))
+        //{
+        //    ImGuiCircles();
+        //}
+        //ImGui.End();
 
         if (ImGui.Begin("Physics"))
         {
@@ -129,12 +161,12 @@ public partial class World
 
     private void ImGuiPhysics()
     {
-        Vector2 gravity = (Vector2) _physics.Gravity;
-        ImGui.InputFloat2("Gravity", ref gravity);
-        _physics.Gravity = gravity;
+        ImGui.PushItemWidth(80);
+        ExGui.DragDouble2("Gravity", ref _physics.Gravity);
 
-        ImGui.InputDouble("Time scale", ref TimeScale);
-        ImGui.InputDouble("Error reduction", ref _physics.ErrorReduction);
+        ExGui.DragScalar("Time scale", ref TimeScale);
+        ExGui.DragScalar("Error reduction", ref _physics.ErrorReduction);
+        ImGui.PopItemWidth();
 
         ImGui.Checkbox("Velocity", ref _enableVelocity);
         ImGui.Checkbox("Angular", ref _enableAngular);
@@ -160,8 +192,12 @@ public partial class World
         ImGui.Checkbox("Angle", ref _lineAngle);
         ImGui.Checkbox("Forward", ref _lineForward);
 
+        ImGui.PushItemWidth(60);
         ImGui.SliderFloat("Wind Flow", ref _physics.WindFlowLineOpacity, 0f, 1f);
+        ImGui.PopItemWidth();
     }
+
+    #endregion
 
     private void IntegrateBody(double halfDt, Double2 gravity, ref CircleBody circle)
     {
@@ -200,8 +236,10 @@ public partial class World
         long startStamp = Stopwatch.GetTimestamp();
         _physics.FixedUpdate(deltaTime);
         TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
-        Console.WriteLine($"Collision: {endTime.TotalMilliseconds}ms");
+        //Console.WriteLine($"Collision: {endTime.TotalMilliseconds}ms");
     }
+
+    #region Drawing
 
     public void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
@@ -210,6 +248,8 @@ public partial class World
             DrawWorld(assets, spriteBatch, scale);
 
             _physics.DrawWorld(assets, spriteBatch, scale);
+
+            spriteBatch.DrawCircle(mousePosition, HoverRadius, 12, Color.Red, 1 / scale);
         }
     }
 
@@ -327,4 +367,5 @@ public partial class World
             circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.Vertical, 0);
     }
 
+    #endregion
 }

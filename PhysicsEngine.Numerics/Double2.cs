@@ -50,6 +50,8 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
 
     public Double2 Rotate(Double2 sinCos) => this * sinCos + RotateCW() * sinCos;
 
+    public double MaxAcross() => Math.Max(X, Y);
+
     public bool Equals(Double2 other) => _value == other._value;
 
     public override bool Equals(object? obj) => obj is Double2 other && Equals(other);

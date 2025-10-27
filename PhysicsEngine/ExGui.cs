@@ -18,6 +18,9 @@ public static class ExGui
         ImGuiSliderFlags flags)
         where T : unmanaged
     {
+        if (format.IsEmpty)
+            format = "%.4g";
+
         fixed (T* local = values)
         {
             ImGuiDataType ty = TypeToImGui(typeof(T));
@@ -32,6 +35,9 @@ public static class ExGui
         ImGuiSliderFlags flags)
         where T : unmanaged
     {
+        if (format.IsEmpty)
+            format = "%.4g";
+
         fixed (T* local = values)
         {
             ImGuiDataType ty = TypeToImGui(typeof(T));
@@ -45,6 +51,8 @@ public static class ExGui
             return ImGuiDataType.Double;
         if (type == typeof(float))
             return ImGuiDataType.Float;
+        if (type == typeof(int))
+            return ImGuiDataType.S32;
 
         static ImGuiDataType ThrowUnsupported() => throw new NotSupportedException();
         return ThrowUnsupported();
@@ -88,7 +96,24 @@ public static class ExGui
         }
         return false;
     }
-    
+
+    public static bool DragBound2(
+        ReadOnlySpan<char> label,
+        ref Bound2 value,
+        ReadOnlySpan<char> format = default,
+        ImGuiSliderFlags flags = DefaultSliderFlags)
+    {
+        Double2 min = value.Min;
+        Double2 max = value.Max;
+        if (DragDouble2($"{label} Min", ref min, format, flags) |
+            DragDouble2($"{label} Max", ref max, format, flags))
+        {
+            value = new Bound2(min, max);
+            return true;
+        }
+        return false;
+    }
+
     public static bool InputAngle(ReadOnlySpan<char> label, ref double angle, bool degrees)
     {
         bool change;

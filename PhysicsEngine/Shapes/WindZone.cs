@@ -3,8 +3,10 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct WindZone(BodyId id) : IBodyId, IZone2D, ITransform2D
+public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
 {
+    public static ShapeKind Kind => ShapeKind.WindZone;
+
     public Bound2 Bounds;
     public Double2 Direction;
     public double Speed;

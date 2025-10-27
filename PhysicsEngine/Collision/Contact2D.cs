@@ -1,10 +1,8 @@
-﻿using PhysicsEngine.Numerics;
+﻿using System;
+using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Collision;
 
-public struct Contact2D
+public record struct Contact2D(Double2 Normal, Double2 Point, double Depth) : IEquatable<Contact2D>
 {
-    public Double2 Normal;
-    public Double2 Point;
-    public double Depth;
 }

@@ -1,7 +1,8 @@
-﻿
+﻿using System;
+
 namespace PhysicsEngine.Numerics;
 
-public readonly struct BodyId(uint value)
+public readonly record struct BodyId(uint Value) : IEquatable<BodyId>
 {
-    public readonly uint Value = value;
+    public override string ToString() => Value.ToString("X");
 }

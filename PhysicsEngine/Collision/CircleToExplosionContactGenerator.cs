@@ -3,34 +3,24 @@ using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine.Collision;
 
-struct CircleToCircleContactGenerator(
-    bool requireSharedTrajectory, IntersectionResult mask) : IContactGenerator<CircleBody, CircleBody>
+struct CircleToExplosionContactGenerator(
+    IntersectionResult mask) : IContactGenerator<CircleBody, ExplosionBody2D>
 {
-    public bool RequireSharedTrajectory = requireSharedTrajectory;
     public IntersectionResult Mask = mask;
 
-    public readonly bool Generate(ref CircleBody a, ref CircleBody b, out Contact2D contact)
+    public readonly bool Generate(ref CircleBody a, ref ExplosionBody2D b, out Contact2D contact)
     {
         contact = default;
 
         Circle cA = a.Circle;
         Circle cB = b.Circle;
 
-        Double2 normal = cB.Origin - cA.Origin;
-        if (RequireSharedTrajectory)
-        {
-            Double2 v = b.Velocity - a.Velocity;
-            if (Double2.Dot(v, normal) > 0)
-            {
-                // circles are moving apart
-                return false;
-            }
-        }
-
         if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & Mask) == 0)
         {
             return false;
         }
+        
+        Double2 normal = cB.Origin - cA.Origin;
 
         contact = new Contact2D()
         {

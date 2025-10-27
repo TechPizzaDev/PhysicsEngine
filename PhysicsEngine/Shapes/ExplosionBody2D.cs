@@ -3,8 +3,10 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct ExplosionBody2D(BodyId id) : IBodyId, IShape2D, ITransform2D
+public struct ExplosionBody2D(BodyId id) : IShapeId, IShape2D, ITransform2D
 {
+    public static ShapeKind Kind => ShapeKind.Explosion;
+
     public Transform2D Transform;
     public double Radius;
     public double Force;

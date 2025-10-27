@@ -3,8 +3,10 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct FluidZone(BodyId id) : IBodyId, IZone2D, ITransform2D
+public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D
 {
+    public static ShapeKind Kind => ShapeKind.FluidZone;
+
     public Bound2 Bounds;
     public double Density;
     

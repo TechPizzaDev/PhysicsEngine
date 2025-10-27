@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -15,39 +17,79 @@ namespace PhysicsEngine
 
         public Storage(int capacity)
         {
-            _values = new T[BitOperations.RoundUpToPowerOf2((uint) capacity)];
+            if (capacity == 0)
+                _values = Array.Empty<T>();
+            else
+                _values = new T[BitOperations.RoundUpToPowerOf2(Math.Max(4, (uint) capacity))];
         }
 
-        public Storage() : this(4)
+        public Storage() : this(0)
         {
         }
+
+        public ref T this[int i] => ref Get(i);
 
         public Span<T> AsSpan()
         {
             return _values.AsSpan(0, _count);
         }
 
+        public void Add(T value)
+        {
+            Add() = value;
+        }
+
         public ref T Add()
         {
             int count = _count;
-            if (count >= _values.Length)
+            T[] values = _values;
+            if ((uint) count < (uint) values.Length)
             {
-                Array.Resize(ref _values, (int) BitOperations.RoundUpToPowerOf2((uint) count + 1));
+                _count = count + 1;
+                return ref values[count];
             }
+            return ref AddWithResize();
+        }
 
-            ref T value = ref _values[count];
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private ref T AddWithResize()
+        {
+            int count = _count;
+
+            T[] newArray = new T[BitOperations.RoundUpToPowerOf2((uint) count + 1)];
+            _values.CopyTo(new Span<T>(newArray));
+            _values = newArray;
+
             _count = count + 1;
-            return ref value;
+            return ref newArray[count];
+        }
+
+        public ref T Get(int index)
+        {
+            int count = _count;
+            T[] values = _values;
+            if (index < count && (uint) index < (uint) values.Length)
+            {
+                return ref values[index];
+            }
+            ThrowOutOfBounds();
+            return ref Unsafe.NullRef<T>();
         }
 
         public void RemoveAt(int index)
         {
-            int count = _count;
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint) index, (uint) count, nameof(index));
-
-            T lastValue = _values[count - 1];
-            _values[index] = lastValue;
-            _count = count - 1;
+            int last = _count - 1;
+            T[] values = _values;
+            if ((uint) last < (uint) values.Length && (uint) index < (uint) values.Length)
+            {
+                T lastValue = values[last];
+                values[index] = lastValue;
+                _count = last;
+            }
+            else
+            {
+                ThrowOutOfBounds();
+            }
         }
 
         public void Clear()
@@ -57,6 +99,12 @@ namespace PhysicsEngine
                 AsSpan().Clear();
             }
             _count = 0;
+        }
+
+        [DoesNotReturn]
+        private static void ThrowOutOfBounds()
+        {
+            throw new IndexOutOfRangeException();
         }
     }
 }
