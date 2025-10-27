@@ -3,6 +3,7 @@ using MonoGame.Framework.Audio;
 using MonoGame.Framework.Graphics;
 using MonoGame.Framework.Input;
 using PhysicsEngine.Drawing;
+using PhysicsEngine.Levels;
 using System;
 using System.Numerics;
 using System.Text;
@@ -86,7 +87,7 @@ namespace PhysicsEngine
 
         private void ResetWorld()
         {
-            _world = new World(_worldRng);
+            _world = new SandboxWorld(_worldRng);
             _cameraTarget = new(0, 200);
         }
 
@@ -166,11 +167,6 @@ namespace PhysicsEngine
             if (_inputState.IsKeyPressed(Keys.F5))
             {
                 ResetWorld();
-            }
-
-            if (_inputState.NewKeyState.IsKeyDown(Keys.F6))
-            {
-                _world.SpawnCircle();
             }
 
             InputState input = _inputState;

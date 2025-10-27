@@ -15,10 +15,11 @@ namespace PhysicsEngine;
 
 public partial class World
 {
+    private Random _random;
     private PhysicsWorld _physics;
-    private uint _nextCircleId = 1;
 
-    public Random rng;
+    public Random Random => _random;
+    public PhysicsWorld Physics => _physics;
 
     private StringBuilder _strBuilder = new();
 
@@ -49,58 +50,17 @@ public partial class World
 
     public World(Random random)
     {
-        rng = random;
-
+        _random = random;
         _physics = new PhysicsWorld();
 
         SetupEditorProxies();
-
-        for (int i = 0; i < 5; i++)
-        {
-            SpawnCircle();
-        }
-
-        for (int i = 0; i < 5; i++)
-        {
-            ref CircleBody circle = ref SpawnCircle();
-            circle.Transform.Position *= 0.25;
-            circle.RigidBody.Velocity = new();
-        }
-
-        for (int i = 0; i < 500; i++)
-        {
-            SpawnCircle();
-        }
     }
 
-    public ref CircleBody SpawnCircle()
-    {
-        return ref SpawnCircle(rng, _physics.GetStorage<CircleBody>());
-    }
+    public ref T Add<T>() where T : IShapeId => ref Physics.Add<T>();
 
-    public ref CircleBody SpawnCircle(Random rng, Storage<CircleBody> storage)
-    {
-        ref CircleBody circle = ref storage.Add();
-        circle = new CircleBody(new BodyId(_nextCircleId++))
-        {
-            Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
-            Radius = rng.Next(20, 40),
-            Density = 250f,
-            trail = new Trail(512),
-        };
-        circle.Transform.Position = rng.NextVector2(new Vector2(-3000, 5000), new Vector2(3000, 0));
+    public ref T Add<T>(T value) where T : IShapeId => ref Physics.Add(value);
 
-        circle.RigidBody.Velocity = new Double2(50, 50);
-        circle.RigidBody.AngularVelocity = 8;
-        circle.RigidBody.Torque = -150;
-        circle.RigidBody.RestitutionCoeff = 0.5;
-
-        circle.CalculateMass();
-
-        return ref circle;
-    }
-
-    public void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
+    public virtual void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
     {
         mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransform);
 
@@ -196,7 +156,7 @@ public partial class World
 
     #endregion
 
-    public void FixedUpdate(double deltaTime)
+    public virtual void FixedUpdate(double deltaTime)
     {
         long startStamp = Stopwatch.GetTimestamp();
         _physics.FixedUpdate(deltaTime);
@@ -206,7 +166,7 @@ public partial class World
 
     #region Drawing
 
-    public void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch, float scale)
+    public virtual void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
         if (renderPass == RenderPass.Scene)
         {
