@@ -2,12 +2,12 @@
 
 namespace PhysicsEngine;
 
-public class EnumStore<K, V>
+public class EnumMap<K, V>
     where K : struct, Enum, IConvertible
 {
     private readonly V[] _values;
 
-    public EnumStore()
+    public EnumMap()
     {
         _values = new V[Enum.GetValues<K>().Length];
     }

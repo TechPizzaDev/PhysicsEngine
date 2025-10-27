@@ -78,7 +78,7 @@ public partial class World
 
     public ref CircleBody SpawnCircle()
     {
-        return ref SpawnCircle(rng, _physics.Circles);
+        return ref SpawnCircle(rng, _physics.GetStorage<CircleBody>());
     }
 
     public ref CircleBody SpawnCircle(Random rng, Storage<CircleBody> storage)
@@ -127,7 +127,7 @@ public partial class World
         public readonly int Id = id;
         public readonly ShapeLocation Location = location;
 
-        readonly BodyId IShapeId.Id => Location.Id;
+        BodyId IShapeId.Id { get => Location.Id; set { throw new NotSupportedException(); } }
     }
 
     private void ImGuiUpdate()
@@ -223,7 +223,7 @@ public partial class World
 
         Double2 gravity = _physics.Gravity;
 
-        foreach (ref CircleBody circle in _physics.Circles.AsSpan())
+        foreach (ref CircleBody circle in _physics.GetStorage<CircleBody>().AsSpan())
         {
             IntegrateBody(halfDt, gravity, ref circle);
 
@@ -255,7 +255,7 @@ public partial class World
 
     private void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
-        foreach (ref CircleBody circle in _physics.Circles.AsSpan())
+        foreach (ref CircleBody circle in _physics.GetStorage<CircleBody>().AsSpan())
         {
             DrawCircleBody(spriteBatch, scale, circle);
 

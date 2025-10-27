@@ -19,8 +19,8 @@ public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
     public double TurbulenceDepth;
     public int TurbulenceSeed;
     public double Time;
-
-    public readonly BodyId Id => id;
+    
+    public BodyId Id { get; set; } = id;
 
     public Double2 Position
     {

@@ -6,5 +6,5 @@ public interface IShapeId
 {
     static abstract ShapeKind Kind { get; }
 
-    BodyId Id { get; }
+    BodyId Id { get; set; }
 }

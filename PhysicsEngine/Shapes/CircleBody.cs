@@ -18,7 +18,7 @@ public struct CircleBody(BodyId id) : IShapeId, IRigidBody2D, IShape2D, ITransfo
 
     public Trail trail;
 
-    public readonly BodyId Id => id;
+    public BodyId Id { get; set; } = id;
 
     public readonly Double2 Velocity => RigidBody.Velocity;
 

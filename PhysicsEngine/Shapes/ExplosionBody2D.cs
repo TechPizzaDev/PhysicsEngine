@@ -13,8 +13,8 @@ public struct ExplosionBody2D(BodyId id) : IShapeId, IShape2D, ITransform2D
     public double Time;
     public double Interval;
     public bool ShouldApply;
-
-    public readonly BodyId Id => id;
+    
+    public BodyId Id { get; set; } = id;
 
     public Double2 Position
     {

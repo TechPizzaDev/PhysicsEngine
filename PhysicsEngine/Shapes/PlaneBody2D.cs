@@ -7,8 +7,8 @@ public struct PlaneBody2D(BodyId id) : IShapeId, ITransform2D, IRigidBody2D
     public static ShapeKind Kind => ShapeKind.Plane;
 
     public Plane2D Data;
-
-    public readonly BodyId Id => id;
+    
+    public BodyId Id { get; set; } = id;
 
     public readonly Double2 Position { get => default; set { } }
 

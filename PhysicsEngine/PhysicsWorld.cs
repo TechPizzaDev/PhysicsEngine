@@ -19,20 +19,8 @@ public class PhysicsWorld
 
     #endregion
 
-    #region Bodies
-
-    public Storage<CircleBody> Circles = new();
-    public Storage<PlaneBody2D> _planes = new();
-    public Storage<ExplosionBody2D> _explosions = new();
-
-    #endregion
-
-    #region Zones
-
-    public Storage<WindZone> _windZones = new();
-    public Storage<FluidZone> _fluidZones = new();
-
-    #endregion
+    private EnumMap<ShapeKind, object> _bodyStorageMap = new();
+    private uint _nextBodyId = 1;
 
     #region Variables
 
@@ -46,12 +34,12 @@ public class PhysicsWorld
 
     public PhysicsWorld()
     {
-        _planes.Add() = new PlaneBody2D(new BodyId(1))
+        Add(new PlaneBody2D()
         {
             Data = new Plane2D(new Double2(0, -1), 0)
-        };
+        });
 
-        _windZones.Add() = new WindZone(new BodyId(1))
+        Add(new WindZone()
         {
             Bounds = new Bound2(new RectangleF(0, 0, 10000, 500)),
             Speed = 100f,
@@ -62,9 +50,9 @@ public class PhysicsWorld
             TurbulenceIntensity = 1f,
             TurbulenceScale = new Double2(0.001),
             TurbulenceDepth = 0.1,
-        };
+        });
 
-        _windZones.Add() = new WindZone(new BodyId(2))
+        Add(new WindZone()
         {
             Bounds = new Bound2(new RectangleF(500, 0, 10000, 5000)),
             Speed = 100f,
@@ -76,21 +64,21 @@ public class PhysicsWorld
             TurbulenceScale = new Double2(0.001),
             TurbulenceDepth = 0.1,
             TurbulenceSeed = 1234,
-        };
+        });
 
-        _fluidZones.Add() = new FluidZone(new BodyId(1))
+        Add(new FluidZone()
         {
             Bounds = new Bound2(new RectangleF(-10000, 0, 10000, 500)),
             Density = 997,
-        };
+        });
 
-        _explosions.Add() = new ExplosionBody2D(new BodyId(1))
+        Add(new ExplosionBody2D()
         {
             Transform = new() { Position = new Double2(0, 3000) },
             Radius = 4000,
             Force = 100_000_000_000,
             Interval = 3,
-        };
+        });
     }
 
     public void FixedUpdate(double deltaTime)
@@ -98,11 +86,11 @@ public class PhysicsWorld
         if (deltaTime == 0)
             return;
 
-        Span<CircleBody> bodies = Circles.AsSpan();
+        Span<CircleBody> bodies = GetStorage<CircleBody>().AsSpan();
 
-        ApplyZone(deltaTime, _windZones.AsSpan(), bodies);
-        ApplyZone(deltaTime, _fluidZones.AsSpan(), bodies);
-        ApplyExplosions(deltaTime, _explosions.AsSpan(), bodies);
+        ApplyZone(deltaTime, GetStorage<WindZone>().AsSpan(), bodies);
+        ApplyZone(deltaTime, GetStorage<FluidZone>().AsSpan(), bodies);
+        ApplyExplosions(deltaTime, GetStorage<ExplosionBody2D>().AsSpan(), bodies);
 
         _circleContacts.Clear();
 
@@ -111,13 +99,71 @@ public class PhysicsWorld
 
         _planeContacts.Clear();
         CircleToPlaneContactGenerator gen2 = new();
-        Span<PlaneBody2D> planes = _planes.AsSpan();
+        Span<PlaneBody2D> planes = GetStorage<PlaneBody2D>().AsSpan();
         GenerateContacts(ref gen2, bodies, planes, _planeContacts);
 
         SolveContacts(ErrorReduction, _circleContacts.AsSpan(), bodies, bodies);
 
         SolveContacts(ErrorReduction, _planeContacts.AsSpan(), bodies, planes);
     }
+
+    #region Body storage
+
+    public Storage<T> GetStorage<T>()
+        where T : IShapeId
+    {
+        return (Storage<T>) _bodyStorageMap.Get(T.Kind, _ => new Storage<T>());
+    }
+
+    private BodyId MakeBodyId()
+    {
+        return new BodyId(_nextBodyId++);
+    }
+
+    public ref T Add<T>()
+        where T : IShapeId
+    {
+        ref T body = ref GetStorage<T>().Add();
+        body.Id = MakeBodyId();
+        return ref body;
+    }
+
+    public ref T Add<T>(T value)
+        where T : IShapeId
+    {
+        Storage<T> storage = GetStorage<T>();
+        BodyId id = value.Id;
+        if (id == default)
+        {
+            value.Id = MakeBodyId();
+        }
+        else if (!IsNewId(id, storage))
+        {
+            ThrowDuplicateId();
+        }
+
+        ref T body = ref storage.Add();
+        body = value;
+        return ref body;
+    }
+
+    private static bool IsNewId<T>(BodyId id, Storage<T> storage)
+        where T : IShapeId
+    {
+        var span = storage.AsSpan();
+        for (int i = 0; i < span.Length; i++)
+        {
+            if (span[i].Id == id)
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void ThrowDuplicateId() => throw new InvalidOperationException();
+
+    #endregion
 
     #region Apply Zones
 
@@ -252,23 +298,23 @@ public class PhysicsWorld
         RectangleF viewport = RectangleF.FromPoints(viewMin, viewMax);
 
         double planeWidth = 10000;
-        foreach (ref PlaneBody2D plane in _planes.AsSpan())
+        foreach (ref PlaneBody2D plane in GetStorage<PlaneBody2D>().AsSpan())
         {
             DrawPlane(spriteBatch, planeWidth, plane.Data);
         }
 
         Vector2 lineSpacing = new(50 / (scale * 2));
-        foreach (ref WindZone zone in _windZones.AsSpan())
+        foreach (ref WindZone zone in GetStorage<WindZone>().AsSpan())
         {
             DrawWindZone(spriteBatch, lineSpacing, viewport, scale, zone);
         }
 
-        foreach (ref FluidZone zone in _fluidZones.AsSpan())
+        foreach (ref FluidZone zone in GetStorage<FluidZone>().AsSpan())
         {
             DrawFluidZone(spriteBatch, zone);
         }
 
-        foreach (ref ExplosionBody2D explosion in _explosions.AsSpan())
+        foreach (ref ExplosionBody2D explosion in GetStorage<ExplosionBody2D>().AsSpan())
         {
             DrawExplosionBody(spriteBatch, explosion);
         }
@@ -406,6 +452,8 @@ public class PhysicsWorld
 
     #endregion
 
+    #region GetObjectsInRange
+
     public void GetObjectsInRange(Double2 position, float radius, Storage<ShapeLocation> output)
     {
         CircleBody origin = new()
@@ -414,16 +462,22 @@ public class PhysicsWorld
             Radius = radius
         };
 
-        GetContacts(output, ref origin, new CircleToCircleContactGenerator(false, IntersectionResult.Any), Circles.AsSpan(), ShapeKind.Circle);
-        GetContacts(output, ref origin, new CircleToPlaneContactGenerator(), _planes.AsSpan(), ShapeKind.Plane);
-        GetContacts(output, ref origin, new CircleToExplosionContactGenerator(IntersectionResult.Any), _explosions.AsSpan(), ShapeKind.Explosion);
+        void Get<G, T>(G generator)
+            where G : IContactGenerator<CircleBody, T>
+            where T : IShapeId
+        {
+            GetContacts<G, CircleBody, T>(output, ref origin, generator, GetStorage<T>().AsSpan());
+        }
 
-        GetContacts(output, ref origin, new CircleToShapeContactGenerator<WindZone>(), _windZones.AsSpan(), ShapeKind.WindZone);
-        GetContacts(output, ref origin, new CircleToShapeContactGenerator<FluidZone>(), _fluidZones.AsSpan(), ShapeKind.FluidZone);
+        Get<CircleToCircleContactGenerator, CircleBody>(new(false, IntersectionResult.Any));
+        Get<CircleToPlaneContactGenerator, PlaneBody2D>(new());
+        Get<CircleToExplosionContactGenerator, ExplosionBody2D>(new(IntersectionResult.Any));
+        Get<CircleToShapeContactGenerator<WindZone>, WindZone>(new());
+        Get<CircleToShapeContactGenerator<FluidZone>, FluidZone>(new());
     }
 
     private static void GetContacts<G, T1, T2>(
-        Storage<ShapeLocation> output, ref T1 origin, G generator, Span<T2> bodies, ShapeKind kind)
+        Storage<ShapeLocation> output, ref T1 origin, G generator, Span<T2> bodies)
         where G : IContactGenerator<T1, T2>
         where T2 : IShapeId
     {
@@ -432,8 +486,10 @@ public class PhysicsWorld
             ref T2 body = ref bodies[i];
             if (generator.Generate(ref origin, ref body, out Contact2D contact))
             {
-                output.Add() = new ShapeLocation(kind, body.Id, contact);
+                output.Add() = new ShapeLocation(T2.Kind, body.Id, contact);
             }
         }
     }
+
+    #endregion
 }

@@ -10,7 +10,7 @@ public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D
     public Bound2 Bounds;
     public double Density;
     
-    public readonly BodyId Id => id;
+    public BodyId Id { get; set; } = id;
 
     public Double2 Position
     {

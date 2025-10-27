@@ -11,7 +11,7 @@ public partial class World
 {
     public bool UseDegreesInput = true;
 
-    private EnumStore<ShapeKind, EditorProxy> _editors = new();
+    private EnumMap<ShapeKind, EditorProxy> _editors = new();
 
     #region Helpers
 
@@ -63,7 +63,7 @@ public partial class World
     {
         var culture = CultureInfo.InvariantCulture;
 
-        var circles = _physics.Circles.AsSpan();
+        var circles = _physics.GetStorage<CircleBody>().AsSpan();
         for (int i = 0; i < circles.Length; i++)
         {
             ImGui.PushID(i);
@@ -169,17 +169,17 @@ public partial class World
             ImGui.Text("Empty");
         };
 
-        void Set<T>(Storage<T> storage, EditorAction<T> action)
+        void Set<T>(EditorAction<T> action)
             where T : IShapeId
         {
-            _editors[T.Kind] = MakeEditorProxy(T.Kind, storage, action);
+            _editors[T.Kind] = MakeEditorProxy(T.Kind, _physics.GetStorage<T>(), action);
         }
 
-        Set(_physics.Circles, ImGuiCircleEditor);
-        Set(_physics._planes, ImGuiPlaneEditor);
-        Set(_physics._explosions, ImGuiExplosionEditor);
-        Set(_physics._windZones, ImGuiWindZoneEditor);
-        Set(_physics._fluidZones, ImGuiFluidZoneEditor);
+        Set<CircleBody>(ImGuiCircleEditor);
+        Set<PlaneBody2D>(ImGuiPlaneEditor);
+        Set<ExplosionBody2D>(ImGuiExplosionEditor);
+        Set<WindZone>(ImGuiWindZoneEditor);
+        Set<FluidZone>(ImGuiFluidZoneEditor);
     }
 
     private static EditorProxy MakeEditorProxy<T>(ShapeKind kind, Storage<T> storage, EditorAction<T> action)
