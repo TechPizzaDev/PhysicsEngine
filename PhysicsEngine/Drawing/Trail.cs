@@ -3,7 +3,7 @@ using System.Numerics;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 
-namespace PhysicsEngine;
+namespace PhysicsEngine.Drawing;
 
 public class Trail
 {

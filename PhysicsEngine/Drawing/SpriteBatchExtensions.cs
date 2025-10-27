@@ -2,7 +2,7 @@
 using MonoGame.Framework.Graphics;
 using System.Numerics;
 
-namespace PhysicsEngine
+namespace PhysicsEngine.Drawing
 {
     public static class SpriteBatchExtensions
     {
@@ -38,8 +38,7 @@ namespace PhysicsEngine
             Color textColor,
             Color shadowColor)
         {
-            DrawShadedString(
-                spriteBatch,
+            spriteBatch.DrawShadedString(
                 font,
                 value,
                 position,

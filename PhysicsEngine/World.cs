@@ -7,6 +7,7 @@ using System.Text;
 using ImGuiNET;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
+using PhysicsEngine.Drawing;
 using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
 

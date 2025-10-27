@@ -9,7 +9,7 @@ using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 using MonoGame.Framework.Input;
 
-namespace PhysicsEngine;
+namespace PhysicsEngine.Drawing;
 
 public class ImGuiRenderer
 {
@@ -35,10 +35,10 @@ public class ImGuiRenderer
     private IndexBuffer? _indexBuffer;
 
     // Textures
-    private Dictionary<IntPtr, Texture2D> _loadedTextures;
+    private Dictionary<nint, Texture2D> _loadedTextures;
 
-    private IntPtr _textureId;
-    private IntPtr? _fontTextureId;
+    private nint _textureId;
+    private nint? _fontTextureId;
 
     // Input
     private Vector2 _scrollValue;
@@ -53,7 +53,7 @@ public class ImGuiRenderer
         _game = game ?? throw new ArgumentNullException(nameof(game));
         _graphicsDevice = game.GraphicsDevice;
 
-        _loadedTextures = new Dictionary<IntPtr, Texture2D>();
+        _loadedTextures = new Dictionary<nint, Texture2D>();
 
         _rasterizerState = new RasterizerState()
         {
@@ -100,7 +100,7 @@ public class ImGuiRenderer
     /// Creates a pointer to a texture, which can be passed through ImGui calls such as <see cref="ImGui.Image" />. 
     /// That pointer is then used by ImGui to let us know what texture to draw
     /// </summary>
-    public virtual IntPtr BindTexture(Texture2D texture)
+    public virtual nint BindTexture(Texture2D texture)
     {
         var id = _textureId++;
 
@@ -112,7 +112,7 @@ public class ImGuiRenderer
     /// <summary>
     /// Removes a previously created texture pointer, releasing its reference and allowing it to be deallocated
     /// </summary>
-    public virtual void UnbindTexture(IntPtr textureId)
+    public virtual void UnbindTexture(nint textureId)
     {
         _loadedTextures.Remove(textureId);
     }

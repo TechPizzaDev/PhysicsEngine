@@ -1,4 +1,4 @@
-﻿namespace PhysicsEngine
+﻿namespace PhysicsEngine.Drawing
 {
     public enum RenderPass
     {
