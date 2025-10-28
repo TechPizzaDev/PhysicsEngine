@@ -10,6 +10,8 @@ namespace PhysicsEngine.Levels;
 
 public class SandboxWorld : World
 {
+    public override string Name => "Sandbox";
+
     public SandboxWorld(Random random) : base(random)
     {
         SetupPhysics();

@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using PhysicsEngine.Numerics;
 
-namespace PhysicsEngine;
+namespace PhysicsEngine.Memory;
 
 public static class ExGui
 {
     public const ImGuiSliderFlags DefaultSliderFlags = ImGuiSliderFlags.NoRoundToFormat;
+
+    public static unsafe Span<T> AsSpan<T>(ref this ImVector<T> vector)
+        where T : unmanaged
+    {
+        return new Span<T>(vector.Data, vector.Size);
+    }
 
     public static unsafe bool DragScalars<T>(
         ReadOnlySpan<char> label,
@@ -22,11 +28,14 @@ public static class ExGui
     {
         if (format.IsEmpty)
             format = "%.4g";
-
+        
+        using var labelU8 = ExMarshal.ToUtf8(label);
+        using var formatU8 = ExMarshal.ToUtf8(format);
         fixed (T* local = values)
         {
             ImGuiDataType ty = TypeToImGui(typeof(T));
-            return ImGui.DragScalarN(label, ty, (nint) local, values.Length, speed, (nint) (&min), (nint) (&max), format, flags);
+            return ImGui.DragScalarN(
+                labelU8.Span, ty, local, values.Length, speed, &min, &max, formatU8.Span, flags);
         }
     }
 
@@ -39,11 +48,14 @@ public static class ExGui
     {
         if (format.IsEmpty)
             format = "%.4g";
-
+        
+        using var labelU8 = ExMarshal.ToUtf8(label);
+        using var formatU8 = ExMarshal.ToUtf8(format);
         fixed (T* local = values)
         {
             ImGuiDataType ty = TypeToImGui(typeof(T));
-            return ImGui.DragScalarN(label, ty, (nint) local, values.Length, 1f, 0, 0, format, flags);
+            return ImGui.DragScalarN(
+                labelU8.Span, ty, local, values.Length, 1f, null, null, formatU8.Span, flags);
         }
     }
 
@@ -123,12 +135,12 @@ public static class ExGui
         if (degrees)
         {
             a *= 180 / Math.PI;
-            change = ExGui.DragScalar(label, ref a, 1f, -360, 360, "%3.0f°", ImGuiSliderFlags.NoRoundToFormat);
+            change = DragScalar(label, ref a, 1f, -360, 360, "%3.0f°", DefaultSliderFlags);
             a /= 180 / Math.PI;
         }
         else
         {
-            change = ExGui.DragScalar(label, ref a, 1f, -Math.PI * 2, Math.PI * 2, "%f", ImGuiSliderFlags.NoRoundToFormat);
+            change = DragScalar(label, ref a, 1f, -Math.PI * 2, Math.PI * 2, "%f", DefaultSliderFlags);
         }
         angle = a;
         return change;
@@ -138,8 +150,10 @@ public static class ExGui
         ReadOnlySpan<char> label, ReadOnlySpan<float> values, int values_offset,
         ReadOnlySpan<char> overlay_text, float scale_min, float scale_max, Vector2 graph_size)
     {
+        using var labelU8 = ExMarshal.ToUtf8(label);
+        using var overlayU8 = ExMarshal.ToUtf8(overlay_text);
         ImGui.PlotHistogram(
-            label, ref MemoryMarshal.GetReference(values), values.Length, values_offset, 
-            overlay_text, scale_min, scale_max, graph_size);
+            labelU8.Span, ref MemoryMarshal.GetReference(values), values.Length, values_offset,
+            overlayU8.Span, scale_min, scale_max, graph_size);
     }
 }

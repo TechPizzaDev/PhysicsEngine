@@ -1,10 +1,12 @@
-﻿using MonoGame.Framework;
+﻿using Hexa.NET.ImGui;
+using MonoGame.Framework;
 using MonoGame.Framework.Audio;
 using MonoGame.Framework.Graphics;
 using MonoGame.Framework.Input;
 using PhysicsEngine.Drawing;
 using PhysicsEngine.Levels;
 using System;
+using System.IO;
 using System.Numerics;
 using System.Text;
 
@@ -36,6 +38,7 @@ namespace PhysicsEngine
         private RenderTarget2D _uiTarget;
 
         private Viewport _lastViewport;
+        private InputState _inputState;
 
         private Vector2 _lastScroll;
         private Vector2 _scrollDelta;
@@ -52,8 +55,16 @@ namespace PhysicsEngine
         private Vector2 _cameraTarget;
         private float _scale = 1.0f;
 
-        private Random _worldRng = new(1234);
+        private Random _worldRng;
         public World _world;
+
+        private WorldFactory[] _worldFactories =
+        [
+            WorldFactory.New<SandboxWorld>(),
+            WorldFactory.New<Exercise1>(),
+            WorldFactory.New<Exercise2>(),
+        ];
+        private int _selectedWorldFactory = 0;
 
         public GameFrame()
         {
@@ -73,6 +84,27 @@ namespace PhysicsEngine
             base.Initialize();
 
             _imguiRenderer = new ImGuiRenderer(this);
+            unsafe
+            {
+                string? str = System.Runtime.InteropServices.Marshal.PtrToStringUTF8((nint) ImGui.GetVersion());
+                Console.WriteLine("ImGui Version: " + str);
+            }
+
+            ImFontConfig config;
+            config.FontDataOwnedByAtlas = 1;
+            config.GlyphMinAdvanceX = 13.0f; // monospaced
+            config.GlyphMaxAdvanceX = float.MaxValue;
+            config.MergeMode = 1;
+            config.RasterizerMultiply = 1.0f;
+            config.RasterizerDensity = 1.0f;
+
+            string path = Path.Combine(Content.RootDirectory, "Font Awesome 7 Free-Solid-900.otf");
+            unsafe
+            {
+                var io = ImGui.GetIO();
+                io.Fonts.AddFontDefault();
+                io.Fonts.AddFontFromFileTTF(path, 13.0f, &config);
+            }
             _imguiRenderer.RebuildFontAtlas();
 
             _lastViewport = GraphicsDevice.Viewport;
@@ -87,7 +119,8 @@ namespace PhysicsEngine
 
         private void ResetWorld()
         {
-            _world = new SandboxWorld(_worldRng);
+            _worldRng = new Random(1234);
+            _world = _worldFactories[_selectedWorldFactory].Factory.Invoke(_worldRng);
             _cameraTarget = new(0, 200);
         }
 
@@ -139,7 +172,7 @@ namespace PhysicsEngine
         {
         }
 
-        private InputState _inputState;
+        #region Update
 
         protected override void Update(in FrameTime time)
         {
@@ -212,12 +245,77 @@ namespace PhysicsEngine
 
             _imguiRenderer.BeginLayout(input, time, _lastViewport.Bounds.Size.ToVector2(), new Vector2(1));
 
+            ImGuiUpdate();
+
             _world.Update(input, time, _inverseSceneTransform);
 
             _imguiRenderer.EndLayout();
 
             base.Update(time);
         }
+
+        #endregion
+
+        #region ImGui
+
+        private void ImGuiUpdate()
+        {
+            if (ImGui.Begin("Levels"))
+            {
+                ImGuiLevels();
+            }
+            ImGui.End();
+        }
+
+        private void ImGuiLevels()
+        {
+            if (ImGui.BeginCombo("##level", _worldFactories[_selectedWorldFactory].Name))
+            {
+                for (int i = 0; i < _worldFactories.Length; i++)
+                {
+                    bool is_selected = _selectedWorldFactory == i;
+
+                    if (ImGui.Selectable(_worldFactories[i].Name, is_selected))
+                        _selectedWorldFactory = i;
+
+                    if (is_selected)
+                        ImGui.SetItemDefaultFocus();
+                }
+                ImGui.EndCombo();
+            }
+            ImGui.SetItemTooltip("Level Selector");
+
+            ImGui.SameLine();
+            if (ImGui.Button(FontAwesome7.ArrowsRotate))
+            {
+                ResetWorld();
+            }
+            ImGui.SetItemTooltip("Reload Level");
+
+            ImGui.SameLine();
+            if (ImGui.ArrowButton("##prev_level", ImGuiDir.Left))
+            {
+                if (_selectedWorldFactory == 0)
+                    _selectedWorldFactory = _worldFactories.Length;
+                _selectedWorldFactory--;
+                ResetWorld();
+            }
+            ImGui.SetItemTooltip("Previous Level");
+
+            ImGui.SameLine();
+            if (ImGui.ArrowButton("##next_level", ImGuiDir.Right))
+            {
+                _selectedWorldFactory++;
+                if (_selectedWorldFactory == _worldFactories.Length)
+                    _selectedWorldFactory = 0;
+                ResetWorld();
+            }
+            ImGui.SetItemTooltip("Next Level");
+        }
+
+        #endregion
+
+        #region Draw
 
         protected override void Draw(in FrameTime time)
         {
@@ -332,5 +430,7 @@ namespace PhysicsEngine
 
             _debugBuilder.Clear();
         }
+
+        #endregion
     }
 }

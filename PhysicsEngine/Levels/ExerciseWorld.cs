@@ -2,8 +2,10 @@
 
 namespace PhysicsEngine.Levels;
 
-public class ExerciseWorld : World
+public abstract class ExerciseWorld : World
 {
+    public override string Name => GetType().Name;
+
     public ExerciseWorld(Random random) : base(random)
     {
     }

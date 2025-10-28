@@ -4,11 +4,12 @@ using System.Globalization;
 using System.Numerics;
 using System.Numerics.Tensors;
 using System.Text;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 using PhysicsEngine.Collections;
 using PhysicsEngine.Drawing;
+using PhysicsEngine.Memory;
 using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
 
@@ -50,6 +51,8 @@ public partial class World
     private bool _lineForward = false;
 
     #endregion
+
+    public virtual string Name => "World";
 
     public World(Random random)
     {

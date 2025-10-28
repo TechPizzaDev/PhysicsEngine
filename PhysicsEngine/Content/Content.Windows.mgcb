@@ -27,3 +27,6 @@
 /processorParam:TextureFormat=Color
 /build:consolas.spritefont
 
+#begin Font Awesome 7 Free-Solid-900.otf
+/copy:Font Awesome 7 Free-Solid-900.otf
+

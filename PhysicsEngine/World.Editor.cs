@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Globalization;
 using System.Numerics;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using PhysicsEngine.Collections;
+using PhysicsEngine.Memory;
 using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
 

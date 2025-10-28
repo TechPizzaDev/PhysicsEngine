@@ -3,11 +3,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
-using ImGuiNET;
+using Hexa.NET.ImGui;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
 using MonoGame.Framework.Input;
+using MonoGame.Imaging;
+using PhysicsEngine.Memory;
 
 namespace PhysicsEngine.Drawing;
 
@@ -34,10 +37,6 @@ public class ImGuiRenderer
     private VertexBuffer? _vertexBuffer;
     private IndexBuffer? _indexBuffer;
 
-    // Textures
-    private Dictionary<nint, Texture2D> _loadedTextures;
-
-    private nint _textureId;
     private nint? _fontTextureId;
 
     // Input
@@ -50,10 +49,12 @@ public class ImGuiRenderer
         var context = ImGui.CreateContext();
         ImGui.SetCurrentContext(context);
 
+        var io = ImGui.GetIO();
+        io.BackendFlags |= ImGuiBackendFlags.RendererHasVtxOffset;
+        io.BackendFlags |= ImGuiBackendFlags.RendererHasTextures;
+
         _game = game ?? throw new ArgumentNullException(nameof(game));
         _graphicsDevice = game.GraphicsDevice;
-
-        _loadedTextures = new Dictionary<nint, Texture2D>();
 
         _rasterizerState = new RasterizerState()
         {
@@ -74,8 +75,9 @@ public class ImGuiRenderer
     /// Creates a texture and loads the font data from ImGui. 
     /// Should be called when the <see cref="GraphicsDevice" /> is initialized but before any rendering is done
     /// </summary>
-    public virtual unsafe void RebuildFontAtlas()
+    public unsafe void RebuildFontAtlas()
     {
+        /*
         // Get font texture from ImGui
         var io = ImGui.GetIO();
         io.Fonts.GetTexDataAsRGBA32(out byte* pixelData, out int width, out int height, out int bytesPerPixel);
@@ -94,33 +96,45 @@ public class ImGuiRenderer
         // Let ImGui know where to find the texture
         io.Fonts.SetTexID(_fontTextureId.Value);
         io.Fonts.ClearTexData(); // Clears CPU side texture data
+        */
     }
 
     /// <summary>
     /// Creates a pointer to a texture, which can be passed through ImGui calls such as <see cref="ImGui.Image" />. 
     /// That pointer is then used by ImGui to let us know what texture to draw
     /// </summary>
-    public virtual nint BindTexture(Texture2D texture)
+    public ImTextureID BindTexture(Texture2D texture)
     {
-        var id = _textureId++;
+        return GCHandle.ToIntPtr(GCHandle.Alloc(texture));
+    }
 
-        _loadedTextures.Add(id, texture);
-
-        return id;
+    public Texture2D GetTexture(ImTextureID id)
+    {
+        if (GCHandle.FromIntPtr(id).Target is Texture2D tex)
+        {
+            return tex;
+        }
+        throw new InvalidOperationException();
     }
 
     /// <summary>
     /// Removes a previously created texture pointer, releasing its reference and allowing it to be deallocated
     /// </summary>
-    public virtual void UnbindTexture(nint textureId)
+    public Texture2D UnbindTexture(ImTextureID id)
     {
-        _loadedTextures.Remove(textureId);
+        GCHandle handle = GCHandle.FromIntPtr(id);
+        Texture2D? tex = handle.Target as Texture2D;
+        handle.Free();
+
+        if (tex == null)
+            throw new InvalidOperationException();
+        return tex;
     }
 
     /// <summary>
     /// Sets up ImGui for a new frame, should be called at frame start
     /// </summary>
-    public virtual void BeginLayout(in InputState input, in FrameTime time, Vector2 displaySize, Vector2 framebufferScale)
+    public void BeginLayout(in InputState input, in FrameTime time, Vector2 displaySize, Vector2 framebufferScale)
     {
         ImGui.GetIO().DeltaTime = time.ElapsedTotalSeconds;
 
@@ -133,7 +147,7 @@ public class ImGuiRenderer
     /// Asks ImGui for the generated geometry data and sends it to the graphics pipeline, 
     /// should be called after the UI is drawn using ImGui.** calls
     /// </summary>
-    public virtual void EndLayout()
+    public void EndLayout()
     {
         ImGui.EndFrame();
     }
@@ -142,7 +156,17 @@ public class ImGuiRenderer
     {
         ImGui.Render();
 
-        RenderDrawData(ImGui.GetDrawData());
+        ImDrawDataPtr drawData = ImGui.GetDrawData();
+
+        // Catch up with texture updates. Most of the times, the list will have 1 element with an OK status, aka nothing to do.
+        // (This almost always points to ImGui::GetPlatformIO().Textures[] but is part of ImDrawData to allow overriding or disabling texture updates).
+        foreach (ImTextureDataPtr tex in drawData.Textures.AsSpan())
+        {
+            if (tex.Status != ImTextureStatus.Ok)
+                UpdateTexture(tex);
+        }
+
+        RenderDrawData(drawData);
     }
 
     #endregion ImGuiRenderer
@@ -152,13 +176,13 @@ public class ImGuiRenderer
     /// <summary>
     /// Setup key input event handler.
     /// </summary>
-    protected virtual void SetupInput()
+    protected void SetupInput()
     {
         var io = ImGui.GetIO();
 
         _game.Window.TextInput += (s, a) =>
         {
-            if (a.Character == new Rune('\t')) 
+            if (a.Character == new Rune('\t'))
                 return;
 
             io.AddInputCharacter((uint) a.Character.Value);
@@ -168,7 +192,7 @@ public class ImGuiRenderer
     /// <summary>
     /// Updates the <see cref="Effect" /> to the current matrices and texture
     /// </summary>
-    protected virtual Effect UpdateEffect(Texture2D texture)
+    protected Effect UpdateEffect()
     {
         _effect ??= new BasicEffect(_graphicsDevice);
 
@@ -178,16 +202,20 @@ public class ImGuiRenderer
         _effect.View = Matrix4x4.Identity;
         _effect.Projection = Matrix4x4.CreateOrthographicOffCenter(0f, io.DisplaySize.X, io.DisplaySize.Y, 0f, -1f, 1f);
         _effect.TextureEnabled = true;
-        _effect.Texture = texture;
         _effect.VertexColorEnabled = true;
 
         return _effect;
     }
 
+    protected void SetTexture(Effect effect, Texture2D texture)
+    {
+        ((BasicEffect) effect).Texture = texture;
+    }
+
     /// <summary>
     /// Sends XNA input state to ImGui
     /// </summary>
-    protected virtual void UpdateInput(in InputState input, Vector2 displaySize, Vector2 framebufferScale)
+    protected void UpdateInput(in InputState input, Vector2 displaySize, Vector2 framebufferScale)
     {
         if (!_game.IsActive)
             return;
@@ -249,7 +277,7 @@ public class ImGuiRenderer
             Keys.PrintScreen => ImGuiKey.PrintScreen,
             Keys.Insert => ImGuiKey.Insert,
             Keys.Delete => ImGuiKey.Delete,
-            >= Keys.D0 and <= Keys.D9 => ImGuiKey._0 + (key - Keys.D0),
+            >= Keys.D0 and <= Keys.D9 => ImGuiKey.Key0 + (key - Keys.D0),
             >= Keys.A and <= Keys.Z => ImGuiKey.A + (key - Keys.A),
             >= Keys.NumPad0 and <= Keys.NumPad9 => ImGuiKey.Keypad0 + (key - Keys.NumPad0),
             Keys.Multiply => ImGuiKey.KeypadMultiply,
@@ -346,8 +374,8 @@ public class ImGuiRenderer
         for (int n = 0; n < drawData.CmdListsCount; n++)
         {
             ImDrawListPtr cmdList = drawData.CmdLists[n];
-            ReadOnlySpan<ImDrawVert> vtxSpan = new((void*) cmdList.VtxBuffer.Data, cmdList.VtxBuffer.Size);
-            ReadOnlySpan<ushort> idxSpan = new((void*) cmdList.IdxBuffer.Data, cmdList.IdxBuffer.Size);
+            ReadOnlySpan<ImDrawVert> vtxSpan = new(cmdList.VtxBuffer.Data, cmdList.VtxBuffer.Size);
+            ReadOnlySpan<ushort> idxSpan = new(cmdList.IdxBuffer.Data, cmdList.IdxBuffer.Size);
 
             _vertexBuffer.SetData(vtxOffset * VertDecl.VertexStride, vtxSpan);
             _indexBuffer.SetData(idxOffset * sizeof(ushort), idxSpan);
@@ -362,6 +390,8 @@ public class ImGuiRenderer
 
     private unsafe void RenderCommandLists(ImDrawDataPtr drawData)
     {
+        Effect effect = UpdateEffect();
+
         _graphicsDevice.SetVertexBuffer(_vertexBuffer);
         _graphicsDevice.Indices = _indexBuffer;
 
@@ -372,28 +402,33 @@ public class ImGuiRenderer
         {
             ImDrawListPtr cmdList = drawData.CmdLists[n];
 
-            for (int cmdi = 0; cmdi < cmdList.CmdBuffer.Size; cmdi++)
+            for (int cmd_i = 0; cmd_i < cmdList.CmdBuffer.Size; cmd_i++)
             {
-                ImDrawCmdPtr drawCmd = cmdList.CmdBuffer[cmdi];
-                if (drawCmd.ElemCount == 0)
+                ImDrawCmd* cmd_p = &cmdList.CmdBuffer.Data[cmd_i];
+                if (cmd_p->UserCallback != null)
+                {
+                    var fn = (delegate*<ImDrawList*, ImDrawCmd*, void>) cmd_p->UserCallback;
+                    fn(cmdList, cmd_p);
+                    continue;
+                }
+
+                ref ImDrawCmd cmd = ref *cmd_p;
+                if (cmd.ElemCount == 0)
                 {
                     continue;
                 }
 
-                if (!_loadedTextures.TryGetValue(drawCmd.TextureId, out Texture2D? value))
-                {
-                    throw new InvalidOperationException(
-                        $"Could not find a texture with id '{drawCmd.TextureId}', please check your bindings");
-                }
+                var texId = cmd.GetTexID();
+                var tex = (Texture2D) GCHandle.FromIntPtr(texId).Target;
 
                 _graphicsDevice.ScissorRectangle = new Rectangle(
-                    (int) drawCmd.ClipRect.X,
-                    (int) drawCmd.ClipRect.Y,
-                    (int) (drawCmd.ClipRect.Z - drawCmd.ClipRect.X),
-                    (int) (drawCmd.ClipRect.W - drawCmd.ClipRect.Y)
+                    (int) cmd.ClipRect.X,
+                    (int) cmd.ClipRect.Y,
+                    (int) (cmd.ClipRect.Z - cmd.ClipRect.X),
+                    (int) (cmd.ClipRect.W - cmd.ClipRect.Y)
                 );
 
-                Effect effect = UpdateEffect(value);
+                SetTexture(effect, tex);
 
                 foreach (EffectPass pass in effect.CurrentTechnique.Passes)
                 {
@@ -401,15 +436,56 @@ public class ImGuiRenderer
 
                     _graphicsDevice.DrawIndexedPrimitives(
                         primitiveType: PrimitiveType.TriangleList,
-                        baseVertex: (int) drawCmd.VtxOffset + vtxOffset,
-                        startIndex: (int) drawCmd.IdxOffset + idxOffset,
-                        primitiveCount: (int) drawCmd.ElemCount / 3
+                        baseVertex: (int) cmd.VtxOffset + vtxOffset,
+                        startIndex: (int) cmd.IdxOffset + idxOffset,
+                        primitiveCount: (int) cmd.ElemCount / 3
                     );
                 }
             }
 
             vtxOffset += cmdList.VtxBuffer.Size;
             idxOffset += cmdList.IdxBuffer.Size;
+        }
+    }
+
+    private unsafe void UpdateTexture(ImTextureDataPtr tex)
+    {
+        if (tex.Status == ImTextureStatus.WantCreate)
+        {
+            //IMGUI_DEBUG_LOG("UpdateTexture #%03d: WantCreate %dx%d\n", tex->UniqueID, tex->Width, tex->Height);
+            Debug.Assert(tex.TexID.IsNull && tex.BackendUserData == null);
+            Debug.Assert(tex.Format == ImTextureFormat.Rgba32);
+
+            Texture2D backend_tex = new(_graphicsDevice, tex.Width, tex.Height);
+            backend_tex.Name = $"ImTextureData [0x{(nuint) tex.Handle:X}]";
+            
+            uint* pixels = (uint*) tex.GetPixels();
+            backend_tex.SetData(new Span<byte>(pixels, tex.GetSizeInBytes()));
+
+            tex.SetTexID(BindTexture(backend_tex));
+            tex.SetStatus(ImTextureStatus.Ok);
+        }
+        else if (tex.Status == ImTextureStatus.WantUpdates)
+        {
+            Texture2D backend_tex = GetTexture(tex.GetTexID());
+
+            int pitch = tex.GetPitch();
+            int bpp = tex.BytesPerPixel;
+            foreach (ImTextureRect r in tex.Updates.AsSpan())
+            {
+                var box = new Rectangle(r.X, r.Y, r.W, r.H);
+                int len = r.W * bpp + pitch * (r.H - 1);
+                var span = new Span<byte>(tex.GetPixelsAt(r.X, r.Y), len);
+                backend_tex.SetData(span, box, 0, 0, pitch);
+            }
+            tex.SetStatus(ImTextureStatus.Ok);
+        }
+
+        if (tex.Status == ImTextureStatus.WantDestroy && tex.UnusedFrames > 0)
+        {
+            UnbindTexture(tex.GetTexID()).Dispose();
+            tex.SetTexID(ImTextureID.Null);
+            tex.SetStatus(ImTextureStatus.Destroyed);
         }
     }
 

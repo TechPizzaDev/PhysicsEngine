@@ -3,9 +3,9 @@ using PhysicsEngine.Shapes;
 
 namespace PhysicsEngine.Levels;
 
-public class Exercise1 : ExerciseWorld
+public class Exercise2 : ExerciseWorld
 {
-    public Exercise1(Random random) : base(random)
+    public Exercise2(Random random) : base(random)
     {
         Add(new CircleBody()
         {
