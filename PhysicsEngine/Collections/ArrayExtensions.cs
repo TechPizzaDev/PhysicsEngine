@@ -1,6 +1,6 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace PhysicsEngine;
+namespace PhysicsEngine.Collections;
 
 public static class ArrayExtensions
 {

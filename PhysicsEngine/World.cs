@@ -2,11 +2,12 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Numerics;
-using System.Runtime.CompilerServices;
+using System.Numerics.Tensors;
 using System.Text;
 using ImGuiNET;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
+using PhysicsEngine.Collections;
 using PhysicsEngine.Drawing;
 using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
@@ -24,6 +25,8 @@ public partial class World
     private StringBuilder _strBuilder = new();
 
     private Vector2 mousePosition;
+
+    private Ring<float> _updateTimeRing = new(300);
 
     #region Variables
 
@@ -87,7 +90,7 @@ public partial class World
         BodyId IShapeId.Id { get => Location.Id; set { throw new NotSupportedException(); } }
     }
 
-    private void ImGuiUpdate()
+    public virtual void ImGuiUpdate()
     {
         ImGuiShapeEditors();
 
@@ -112,6 +115,12 @@ public partial class World
         if (ImGui.Begin("Lines"))
         {
             ImGuiLines();
+        }
+        ImGui.End();
+
+        if (ImGui.Begin("Stats"))
+        {
+            ImGuiStats();
         }
         ImGui.End();
     }
@@ -154,6 +163,25 @@ public partial class World
         ImGui.PopItemWidth();
     }
 
+    private void ImGuiStats()
+    {
+        Span<float> values = _updateTimeRing.GetSpan();
+        float min = TensorPrimitives.Min(values);
+        float avg = TensorPrimitives.Average<float>(values);
+        float max = TensorPrimitives.Max(values);
+
+        ImGui.Text("Fixed Update Time (ms)");
+        float padding = ImGui.GetStyle().FramePadding.X * 2;
+        Vector2 graph_size = new(300 + padding, 100);
+        ExGui.PlotHistogram("##values", values, _updateTimeRing.Tail, null, min, max, graph_size);
+
+        ImGui.BulletText($"Min: {min:0.00}");
+        ImGui.SameLine();
+        ImGui.BulletText($"Avg: {avg:0.00}");
+        ImGui.SameLine();
+        ImGui.BulletText($"Max: {max:0.00}");
+    }
+
     #endregion
 
     public virtual void FixedUpdate(double deltaTime)
@@ -161,7 +189,7 @@ public partial class World
         long startStamp = Stopwatch.GetTimestamp();
         _physics.FixedUpdate(deltaTime);
         TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
-        //Console.WriteLine($"Collision: {endTime.TotalMilliseconds}ms");
+        _updateTimeRing.PushBack((float) endTime.TotalMilliseconds);
     }
 
     #region Drawing
@@ -178,7 +206,7 @@ public partial class World
         }
     }
 
-    private void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
+    protected virtual void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
     {
         foreach (ref CircleBody circle in _physics.GetStorage<CircleBody>().AsSpan())
         {
@@ -249,8 +277,7 @@ public partial class World
         spriteBatch.DrawLine(origin, origin + end, Color.Green, 2f);
     }
 
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private void Append(StringBuilder builder, in CircleBody circle)
+    protected virtual void Append(StringBuilder builder, in CircleBody circle)
     {
         var invariant = NumberFormatInfo.InvariantInfo;
 

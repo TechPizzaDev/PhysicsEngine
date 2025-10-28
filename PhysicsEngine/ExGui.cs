@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Numerics;
+using System.Runtime.InteropServices;
 using ImGuiNET;
 using PhysicsEngine.Numerics;
 
@@ -130,5 +132,14 @@ public static class ExGui
         }
         angle = a;
         return change;
+    }
+
+    public static void PlotHistogram(
+        ReadOnlySpan<char> label, ReadOnlySpan<float> values, int values_offset,
+        ReadOnlySpan<char> overlay_text, float scale_min, float scale_max, Vector2 graph_size)
+    {
+        ImGui.PlotHistogram(
+            label, ref MemoryMarshal.GetReference(values), values.Length, values_offset, 
+            overlay_text, scale_min, scale_max, graph_size);
     }
 }

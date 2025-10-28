@@ -228,8 +228,6 @@ namespace PhysicsEngine
                 _lastViewport = currentViewport;
             }
 
-
-
             GraphicsDevice.SetRenderTarget(_backgroundTarget, Color.Transparent.ToVector4());
             RenderBackground(_spriteBatch, time, currentViewport);
 

@@ -4,7 +4,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
-namespace PhysicsEngine
+namespace PhysicsEngine.Collections
 {
     public class Storage<T>
     {

@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PhysicsEngine;
+namespace PhysicsEngine.Collections;
 
 public class EnumMap<K, V>
     where K : struct, Enum, IConvertible
