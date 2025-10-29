@@ -82,7 +82,7 @@ public partial class World
         if (ImGui.IsMouseClicked(ImGuiMouseButton.Right))
         {
             _objectLocations.Clear();
-            _physics.GetObjectsInRange(mousePosition, HoverRadius, _objectLocations);
+            _physics.GetObjectsInRange(_mousePosition, HoverRadius, _objectLocations);
             if (_objectLocations.Count > 1)
             {
                 ImGui.OpenPopup("hover_multiple_shape");

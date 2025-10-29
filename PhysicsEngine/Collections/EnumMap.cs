@@ -12,11 +12,9 @@ public class EnumMap<K, V>
         _values = new V[Enum.GetValues<K>().Length];
     }
 
-    public V this[K key]
-    {
-        get => _values[ToInt64(key)];
-        set => _values[ToInt64(key)] = value;
-    }
+    public ref V this[K key] => ref _values[ToInt64(key)];
+
+    public Span<V> AsSpan() => new(_values);
 
     public void Fill(V value)
     {
@@ -25,7 +23,7 @@ public class EnumMap<K, V>
 
     public V Get(K key, Func<K, V> factory)
     {
-        ref V value = ref _values[ToInt64(key)];
+        ref V value = ref this[key];
         value ??= factory(key);
         return value;
     }

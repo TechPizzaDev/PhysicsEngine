@@ -1,10 +1,9 @@
 ﻿namespace PhysicsEngine.Drawing
 {
-    public enum RenderPass
+    public enum RenderPass : byte
     {
         Background,
         Scene,
-        UserInterface,
-        ImGui,
+        UI,
     }
 }

@@ -28,7 +28,7 @@ public class PhysicsWorld
     public Double2 Gravity = new(0, -9.82);
 
     public double ErrorReduction = 0.05;
-    
+
     public bool EnableVelocity = true;
     public bool EnableAngular = true;
 
@@ -276,24 +276,14 @@ public class PhysicsWorld
 
         int progress = (int) Math.Clamp((explosion.Time / explosion.Interval) * sides, 0, sides);
 
-        DrawCircle(spriteBatch, center, radius, sides, sides - progress, Color.Yellow, 2);
-        DrawCircle(spriteBatch, center, radius - 3, sides, progress, Color.Red, 4, false);
+        spriteBatch.DrawSlicedCircle(center, radius, sides, sides - progress, Color.Yellow, 2, clockwise: false);
+        spriteBatch.DrawSlicedCircle(center, radius + 1, sides, progress, Color.Red, 4, clockwise: true);
     }
 
-    private static void DrawCircle(
-        SpriteBatch spriteBatch, Vector2 center, float radius, int sides, int count, Color color,
-        float thickness = 1f,
-        bool clockwise = true,
-        float start = -MathF.PI / 2,
-        float layerDepth = 0)
+    public void DrawWorld(in DrawState state)
     {
-        var points = new EllipseEnumerable(new Vector2(radius), sides, count + 1, start, clockwise);
-        bool connect = count - 1 == sides;
-        spriteBatch.DrawPolygon(center, points, color, thickness, layerDepth, connect);
-    }
+        SpriteBatch spriteBatch = state.SpriteBatch;
 
-    public void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
-    {
         Matrix4x4.Invert(spriteBatch.SpriteEffect.GetFinalMatrix(), out Matrix4x4 invProj);
         Vector2 viewMin = Vector2.Transform(new Vector2(-1, 1), invProj);
         Vector2 viewMax = Vector2.Transform(new Vector2(1, -1), invProj);
@@ -305,10 +295,10 @@ public class PhysicsWorld
             DrawPlane(spriteBatch, planeWidth, plane.Data);
         }
 
-        Vector2 lineSpacing = new(50 / (scale * 2));
+        Vector2 lineSpacing = new(50 / (Math.Min(2f, state.Scale * 2)));
         foreach (ref WindZone zone in GetStorage<WindZone>().AsSpan())
         {
-            DrawWindZone(spriteBatch, lineSpacing, viewport, scale, zone);
+            DrawWindZone(spriteBatch, lineSpacing, viewport, state.Scale, zone);
         }
 
         foreach (ref FluidZone zone in GetStorage<FluidZone>().AsSpan())

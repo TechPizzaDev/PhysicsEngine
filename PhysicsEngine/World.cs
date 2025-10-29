@@ -25,7 +25,7 @@ public partial class World
 
     private StringBuilder _strBuilder = new();
 
-    private Vector2 mousePosition;
+    private Vector2 _mousePosition;
 
     private Ring<float> _updateTimeRing = new(300);
 
@@ -68,7 +68,7 @@ public partial class World
 
     public virtual void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
     {
-        mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransform);
+        _mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransform);
 
         double deltaTime = 1 / 60.0 * TimeScale;
         FixedUpdate(deltaTime);
@@ -197,23 +197,25 @@ public partial class World
 
     #region Drawing
 
-    public virtual void Draw(RenderPass renderPass, AssetRegistry assets, SpriteBatch spriteBatch, float scale)
+    public virtual void Draw(in DrawState state)
     {
-        if (renderPass == RenderPass.Scene)
+        if (state.RenderPass == RenderPass.Scene)
         {
-            DrawWorld(assets, spriteBatch, scale);
+            DrawWorld(state);
 
-            _physics.DrawWorld(assets, spriteBatch, scale);
+            _physics.DrawWorld(state);
 
-            spriteBatch.DrawCircle(mousePosition, HoverRadius, 12, Color.Red, 1 / scale);
+            state.SpriteBatch.DrawCircle(_mousePosition, HoverRadius, 16, Color.Red, 1 / state.Scale);
         }
     }
 
-    protected virtual void DrawWorld(AssetRegistry assets, SpriteBatch spriteBatch, float scale)
+    protected virtual void DrawWorld(in DrawState state)
     {
+        SpriteBatch spriteBatch = state.SpriteBatch;
+
         foreach (ref CircleBody circle in _physics.GetStorage<CircleBody>().AsSpan())
         {
-            DrawCircleBody(spriteBatch, scale, circle);
+            DrawCircleBody(state, circle);
 
             //spriteBatch.DrawRectangle(circle.Circle.Bounds.ToRectF(), Color.Red);
 
@@ -226,20 +228,31 @@ public partial class World
             if (_lineVelocity)
                 DrawVelocity(spriteBatch, circle);
 
-            DrawCircleDebugText(assets, spriteBatch, scale, _strBuilder, circle);
+            DrawCircleDebugText(state, _strBuilder, circle);
         }
     }
 
-    private void DrawCircleBody(SpriteBatch spriteBatch, float scale, in CircleBody circle)
+    private void DrawCircleBody(in DrawState state, in CircleBody circle)
     {
         Vector2 center = (Vector2) circle.Transform.Position;
+
+        float scale = state.Scale;
+        float inv_scale = MathF.ReciprocalEstimate(scale);
         float radius = (float) circle.Radius;
-        int sides = int.Clamp((int) ((float) circle.Radius * scale + 3.5f), 6, 42);
-        spriteBatch.DrawCircle(center, radius, sides, circle.Color, 4f);
+        if (radius < inv_scale)
+        {
+            state.SpriteBatch.DrawPoint(center, circle.Color, inv_scale / state.RenderScale);
+        }
+        else
+        {
+            int sides = int.Clamp((int) ((float) circle.Radius * scale + 3.5f), 6, 42);
+            float thick = MathHelper.Clamp(4f / Math.Max(1f, scale), scale, radius * 2f);
+            state.SpriteBatch.DrawCircle(center, radius, sides, circle.Color, thick);
+        }
 
         if (_physics.LineTrail)
         {
-            circle.trail.Draw(spriteBatch, circle.Color, (float) circle.Radius * 0.4f);
+            circle.trail.Draw(state.SpriteBatch, circle.Color, (float) circle.Radius * 0.4f);
         }
     }
 
@@ -306,8 +319,7 @@ public partial class World
             builder.AppendLine(invariant, $"T {body.Torque:0.00}");
     }
 
-    private void DrawCircleDebugText(
-        AssetRegistry assets, SpriteBatch spriteBatch, float scale, StringBuilder builder, in CircleBody circle)
+    private void DrawCircleDebugText(in DrawState state, StringBuilder builder, in CircleBody circle)
     {
         builder.Clear();
 
@@ -317,8 +329,10 @@ public partial class World
             return;
 
         Vector2 origin = (Vector2) circle.Transform.Position;
-        spriteBatch.DrawString(
-            assets.Font_Consolas, builder, origin + new Vector2((float) circle.Radius * scale + 4, -8),
+        Vector2 pos = origin + new Vector2((float) circle.Radius * state.Scale + 4, -8);
+
+        state.SpriteBatch.DrawString(
+            state.Assets.Font_Consolas, builder, pos,
             circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.Vertical, 0);
     }
 

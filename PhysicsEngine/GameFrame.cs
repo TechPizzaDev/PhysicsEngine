@@ -3,6 +3,7 @@ using MonoGame.Framework;
 using MonoGame.Framework.Audio;
 using MonoGame.Framework.Graphics;
 using MonoGame.Framework.Input;
+using PhysicsEngine.Collections;
 using PhysicsEngine.Drawing;
 using PhysicsEngine.Levels;
 using System;
@@ -14,10 +15,17 @@ namespace PhysicsEngine
 {
     public partial class GameFrame : Game
     {
+        struct RenderTarget
+        {
+            public RenderTarget2D? Texture;
+            public float Scale;
+            public DepthFormat DepthFormat;
+        }
+
         public bool DrawDebugInfo = true;
 
         public float MinZoom = 0.125f;
-        public float MaxZoom = 4f;
+        public float MaxZoom = 40f;
 
         private GraphicsDeviceManager _graphicsManager;
         private SpriteBatch _spriteBatch;
@@ -28,14 +36,7 @@ namespace PhysicsEngine
 
         private AssetRegistry _assets;
 
-        private float _backgroundRenderScale = 0.333f;
-        private RenderTarget2D _backgroundTarget;
-
-        private float _sceneRenderScale = 2f;
-        private RenderTarget2D _sceneTarget;
-
-        private float _uiRenderScale = 2f;
-        private RenderTarget2D _uiTarget;
+        private EnumMap<RenderPass, RenderTarget> _renderTargets;
 
         private Viewport _lastViewport;
         private InputState _inputState;
@@ -74,6 +75,11 @@ namespace PhysicsEngine
             _graphicsManager.HardwareModeSwitch = false;
 
             Content.RootDirectory = "Content";
+
+            _renderTargets = new();
+            _renderTargets.Fill(new RenderTarget() { Scale = 2f, DepthFormat = DepthFormat.Depth24Stencil8 });
+            _renderTargets[RenderPass.Background].Scale = 0f;
+            _renderTargets[RenderPass.UI].DepthFormat = DepthFormat.None;
         }
 
         protected override void Initialize()
@@ -114,38 +120,46 @@ namespace PhysicsEngine
             _lastScroll = mouseState.Scroll;
             _lastMousePos = mouseState.Position;
 
-            ResetWorld();
+            ResetLevel();
         }
 
-        private void ResetWorld()
+        private void ResetLevel()
         {
             _worldRng = new Random(1234);
             _world = _worldFactories[_selectedWorldFactory].Factory.Invoke(_worldRng);
-            _cameraTarget = new(0, 200);
+            _cameraTarget = new(0, 0);
+        }
+
+        private void PrevLevel()
+        {
+            if (_selectedWorldFactory == 0)
+                _selectedWorldFactory = _worldFactories.Length;
+            _selectedWorldFactory--;
+            ResetLevel();
+        }
+
+        private void NextLevel()
+        {
+            _selectedWorldFactory++;
+            if (_selectedWorldFactory == _worldFactories.Length)
+                _selectedWorldFactory = 0;
+            ResetLevel();
         }
 
         private void ViewportChanged(in Viewport viewport)
         {
-            _backgroundTarget?.Dispose();
-            _backgroundTarget = CreateRenderTarget(
-                new Size(
-                    (int) (viewport.Width * _backgroundRenderScale),
-                    (int) (viewport.Height * _backgroundRenderScale)),
-                DepthFormat.Depth24Stencil8);
+            foreach (ref RenderTarget target in _renderTargets.AsSpan())
+            {
+                target.Texture?.Dispose();
 
-            _sceneTarget?.Dispose();
-            _sceneTarget = CreateRenderTarget(
-                new Size(
-                    (int) (viewport.Width * _sceneRenderScale),
-                    (int) (viewport.Height * _sceneRenderScale)),
-                DepthFormat.Depth24Stencil8);
+                if (target.Scale <= 0f)
+                    continue;
 
-            _uiTarget?.Dispose();
-            _uiTarget = CreateRenderTarget(
-                new Size(
-                    (int) (viewport.Width * _uiRenderScale),
-                    (int) (viewport.Height * _uiRenderScale)),
-                DepthFormat.None);
+                Size size = new(
+                    (int) (viewport.Width * target.Scale),
+                    (int) (viewport.Height * target.Scale));
+                target.Texture = CreateRenderTarget(size, target.DepthFormat);
+            }
         }
 
         private RenderTarget2D CreateRenderTarget(Size size, DepthFormat depthFormat)
@@ -199,7 +213,19 @@ namespace PhysicsEngine
 
             if (_inputState.IsKeyPressed(Keys.F5))
             {
-                ResetWorld();
+                ResetLevel();
+            }
+
+            if ((_inputState.Modifiers & KeyModifiers.Alt) != 0)
+            {
+                if (_inputState.IsKeyPressed(Keys.Left))
+                {
+                    PrevLevel();
+                }
+                else if (_inputState.IsKeyPressed(Keys.Right))
+                {
+                    NextLevel();
+                }
             }
 
             InputState input = _inputState;
@@ -231,15 +257,15 @@ namespace PhysicsEngine
 
             _sceneTransformMatrix =
                 _playerMatrix *
-                Matrix4x4.CreateTranslation(_lastViewport.Width / 2f, _lastViewport.Height, 0);
+                Matrix4x4.CreateTranslation(_lastViewport.Width / 2f, _lastViewport.Height / 2f, 0);
 
             _sceneRenderMatrix =
                 _sceneTransformMatrix *
-                Matrix4x4.CreateScale(_sceneRenderScale);
+                Matrix4x4.CreateScale(_renderTargets[RenderPass.Scene].Scale);
 
             _uiRenderMatrix =
                 _sceneTransformMatrix *
-                Matrix4x4.CreateScale(_uiRenderScale);
+                Matrix4x4.CreateScale(_renderTargets[RenderPass.UI].Scale);
 
             Matrix4x4.Invert(_sceneTransformMatrix, out _inverseSceneTransform);
 
@@ -269,6 +295,7 @@ namespace PhysicsEngine
 
         private void ImGuiLevels()
         {
+            ImGui.SetNextItemWidth(100);
             if (ImGui.BeginCombo("##level", _worldFactories[_selectedWorldFactory].Name))
             {
                 for (int i = 0; i < _worldFactories.Length; i++)
@@ -288,27 +315,21 @@ namespace PhysicsEngine
             ImGui.SameLine();
             if (ImGui.Button(FontAwesome7.ArrowsRotate))
             {
-                ResetWorld();
+                ResetLevel();
             }
             ImGui.SetItemTooltip("Reload Level");
 
             ImGui.SameLine();
             if (ImGui.ArrowButton("##prev_level", ImGuiDir.Left))
             {
-                if (_selectedWorldFactory == 0)
-                    _selectedWorldFactory = _worldFactories.Length;
-                _selectedWorldFactory--;
-                ResetWorld();
+                PrevLevel();
             }
             ImGui.SetItemTooltip("Previous Level");
 
             ImGui.SameLine();
             if (ImGui.ArrowButton("##next_level", ImGuiDir.Right))
             {
-                _selectedWorldFactory++;
-                if (_selectedWorldFactory == _worldFactories.Length)
-                    _selectedWorldFactory = 0;
-                ResetWorld();
+                NextLevel();
             }
             ImGui.SetItemTooltip("Next Level");
         }
@@ -326,22 +347,30 @@ namespace PhysicsEngine
                 _lastViewport = currentViewport;
             }
 
-            GraphicsDevice.SetRenderTarget(_backgroundTarget, Color.Transparent.ToVector4());
-            RenderBackground(_spriteBatch, time, currentViewport);
+            DrawState state = new()
+            {
+                Assets = _assets,
+                SpriteBatch = _spriteBatch,
+                Scale = _scale,
+                Time = time,
+                Viewport = currentViewport,
+            };
 
-            GraphicsDevice.SetRenderTarget(_sceneTarget, Color.Transparent.ToVector4());
-            RenderScene(_spriteBatch);
+            DoRenderPass(ref state, RenderPass.Background, _sceneRenderMatrix);
+            DoRenderPass(ref state, RenderPass.Scene, _sceneRenderMatrix);
 
-            GraphicsDevice.SetRenderTarget(_uiTarget, Color.Transparent.ToVector4());
-            RenderUserInterface(_spriteBatch, time, currentViewport);
+            DoRenderPass(ref state, RenderPass.UI, _uiRenderMatrix);
+            RenderUserInterface(state);
 
             GraphicsDevice.SetRenderTarget(null, Color.Black.ToVector4());
 
             _spriteBatch.Begin(blendState: BlendState.AlphaBlend, samplerState: SamplerState.LinearClamp);
             RectangleF dstRect = currentViewport.Bounds;
-            _spriteBatch.Draw(_backgroundTarget, dstRect, _backgroundTarget.Bounds, Color.White);
-            _spriteBatch.Draw(_sceneTarget, dstRect, _sceneTarget.Bounds, Color.White);
-            _spriteBatch.Draw(_uiTarget, dstRect, _uiTarget.Bounds, Color.White);
+            foreach (ref RenderTarget target in _renderTargets.AsSpan())
+            {
+                if (target.Texture != null)
+                    _spriteBatch.Draw(target.Texture, dstRect, null, Color.White);
+            }
             _spriteBatch.End();
 
             _imguiRenderer.Draw();
@@ -349,59 +378,38 @@ namespace PhysicsEngine
             base.Draw(time);
         }
 
-        private void RenderBackground(SpriteBatch spriteBatch, in FrameTime time, in Viewport viewport)
+        private void DoRenderPass(ref DrawState state, RenderPass pass, Matrix4x4 transform)
         {
-            spriteBatch.Begin(
+            ref RenderTarget target = ref _renderTargets[pass];
+            GraphicsDevice.SetRenderTarget(target.Texture, Color.Transparent.ToVector4());
+            state.RenderScale = target.Scale;
+            state.RenderPass = pass;
+
+            state.SpriteBatch.Begin(
                 sortMode: SpriteSortMode.Deferred,
                 blendState: BlendState.NonPremultiplied,
                 samplerState: SamplerState.PointClamp,
-                rasterizerState: RasterizerState.CullClockwise,
-                transformMatrix: _sceneRenderMatrix);
+                rasterizerState: RasterizerState.CullNone,
+                transformMatrix: transform);
 
-            _world.Draw(RenderPass.Background, _assets, spriteBatch, _scale);
+            _world.Draw(state);
 
-            spriteBatch.End();
+            state.SpriteBatch.End();
         }
 
-        private void RenderScene(SpriteBatch spriteBatch)
+        [Obsolete]
+        private void RenderUserInterface(in DrawState state)
         {
-            spriteBatch.Begin(
-                sortMode: SpriteSortMode.Deferred,
+            state.SpriteBatch.Begin(
                 blendState: BlendState.NonPremultiplied,
-                samplerState: SamplerState.PointClamp,
-                rasterizerState: RasterizerState.CullClockwise,
-                transformMatrix: _sceneRenderMatrix);
-
-            _world.Draw(RenderPass.Scene, _assets, spriteBatch, _scale);
-
-            spriteBatch.End();
-        }
-
-        private void RenderUserInterface(
-            SpriteBatch spriteBatch,
-            in FrameTime time,
-            in Viewport viewport)
-        {
-            spriteBatch.Begin(
-                sortMode: SpriteSortMode.Deferred,
-                blendState: BlendState.NonPremultiplied,
-                samplerState: SamplerState.PointClamp,
-                transformMatrix: _uiRenderMatrix);
-
-            _world.Draw(RenderPass.UserInterface, _assets, spriteBatch, 1f);
-
-            spriteBatch.End();
-
-            spriteBatch.Begin(
-                blendState: BlendState.NonPremultiplied,
-                transformMatrix: Matrix4x4.CreateScale(_uiRenderScale));
+                transformMatrix: Matrix4x4.CreateScale(_renderTargets[RenderPass.UI].Scale));
 
             if (DrawDebugInfo)
             {
-                DrawDebug(new Vector2(4, viewport.Height - 74));
+                DrawDebug(new Vector2(4, state.Viewport.Height - 74));
             }
 
-            spriteBatch.End();
+            state.SpriteBatch.End();
         }
 
         private void DrawDebug(Vector2 position)
