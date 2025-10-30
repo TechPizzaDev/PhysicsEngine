@@ -1,83 +1,122 @@
-﻿using System.Collections.Generic;
+﻿using System;
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
 using MonoGame.Framework;
 using MonoGame.Framework.Graphics;
+using PhysicsEngine.Collections;
+using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Drawing;
 
 public class Trail
 {
-    public Queue<Vector2> Points = new();
-    public int Capacity;
+    private Ring<Vector2> _points;
 
-    private Vector2 lastPoint;
-    private Vector2 accumulator;
-    private int accCount = 4;
+    private Vector2 _lastDelta;
+    private Vector2 _lastPoint;
+    private Vector2 _accumulator;
+    private int _accCount = -1;
 
     public Trail(int capacity)
     {
-        Capacity = capacity;
-        Points = new Queue<Vector2>(Capacity);
+        _points = new Ring<Vector2>(capacity);
     }
 
     public void Update(Vector2 point)
     {
-        Vector2 diff = point - lastPoint;
-        lastPoint = point;
+        Vector2 delta = point - _lastPoint;
+        _lastDelta = delta;
+        _lastPoint = point;
 
-        accumulator += diff;
+        _accumulator += delta;
 
         int countThresh = 8;
         int rangeThresh = 4;
 
-        if (accCount < countThresh &&
-            accumulator.LengthSquared() < rangeThresh * rangeThresh)
+        if ((uint) _accCount < (uint) countThresh &&
+            _accumulator.LengthSquared() < rangeThresh * rangeThresh)
         {
-            accCount++;
+            _accCount++;
             return;
         }
-        
-        accCount = default;
-        accumulator = default;
 
-        if (Points.Count >= Capacity)
-        {
-            Points.Dequeue();
-        }
+        _accCount = default;
+        _accumulator = default;
 
-        Points.Enqueue(point);
+        _points.PushFront(point);
     }
 
-    public void Draw(SpriteBatch spriteBatch, Color color, float thickness)
+    public void DrawLines<C>(SpriteBatch spriteBatch, C color, float width, float depth = 0f)
+        where C : IQuad<Color>
     {
-        Color startColor = Color.Lerp(color, Color.Black, 1f);
+        Texture2D texture = SpriteBatchShapeExtensions.GetWhitePixelTexture(spriteBatch.GraphicsDevice);
 
-        int start = Capacity - Points.Count;
-        int count = start;
-        Vector2 prevPoint = default;
-        Vector2 dir = default;
+        Vector3 orthoL = DeltaToOrthogonalDir(_lastDelta, width);
+        Vector2 pointL = _lastPoint;
 
-        foreach (Vector2 point in Points)
+        float inv_count = 1f / _points.Capacity;
+        float ageL = 1f;
+
+        for (int j = 0; j < 2; j++)
         {
-            if (count != start)
+            Span<Vector2> points = j == 0 ? _points.GetHeadSpan() : _points.GetTailSpan();
+
+            for (int i = 0; i < points.Length; i++)
             {
-                dir = point - prevPoint;
-                DrawLine(spriteBatch, prevPoint, point, dir, count, startColor, color, thickness);
+                Vector2 pointR = points[i];
+                Vector2 delta = pointL - pointR;
+                if (delta == Vector2.Zero)
+                {
+                    continue;
+                }
+                // Get quad early to avoid register spills on rare allocs.
+                ref SpriteQuad quad = ref spriteBatch.GetBatchQuad(texture, depth);
+
+                float ageR = ageL - inv_count;
+                float widthR = (ageR + 0.1f) / 1.1f * width;
+                Vector3 orthoR = DeltaToOrthogonalDir(delta, widthR);
+
+                uint alphaL = (uint) float.ConvertToIntegerNative<int>(ageL * 255f);
+                uint alphaR = (uint) float.ConvertToIntegerNative<int>(ageR * 255f);
+                ageL = ageR;
+
+                // Cheap alpha interpolation for all corners in bulk.
+                Vector128<ushort> alpha = Vector128.Narrow(Vector128.Create(alphaL), Vector128.Create(alphaR));
+                Vector128<byte> color4x = color.ToVector128().AsByte();
+                Vector128<uint> colors = Composition.ApplyAlpha(color4x, alpha).AsUInt32();
+
+                // Create corners of quad by adding rotated thickness to points.
+                Vector3 pL = Vector3.Create(pointL, depth);
+                Vector3 pTL = pL + orthoL;
+                Vector3 pBL = pL - orthoL;
+
+                Vector3 pR = Vector3.Create(pointR, depth);
+                Vector3 pTR = pR + orthoR;
+                Vector3 pBR = pR - orthoR;
+
+                pointL = pointR;
+                orthoL = orthoR;
+
+                quad.VertexTL.SetPositionAndColor(pTL, colors, 0);
+                quad.VertexBL.SetPositionAndColor(pBL, colors, 2);
+                quad.VertexTR.SetPositionAndColor(pTR, colors, 1);
+                quad.VertexBR.SetPositionAndColor(pBR, colors, 3);
             }
-
-            prevPoint = point;
-            count++;
         }
-
-        DrawLine(spriteBatch, prevPoint, lastPoint, dir, count, startColor, color, thickness);
+        spriteBatch.FlushIfNeeded();
     }
 
-    private void DrawLine(
-        SpriteBatch spriteBatch, Vector2 prevPoint, Vector2 point, Vector2 dir,
-        int count, Color startColor, Color color, float thickness)
+    /// <summary>
+    /// Given the direction (delta), rotate it by 90 degrees.
+    /// This is effectively a cheap plane rotation.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector3 DeltaToOrthogonalDir(Vector2 delta, float width)
     {
-        float age = count / (float) Capacity;
-        float thick = (age + 0.1f) / 1.1f * thickness;
-        spriteBatch.DrawLine(prevPoint - dir, point, Color.Lerp(startColor, color, age), thick);
+        Vector128<float> norm = Vector2.Normalize(delta).AsVector128Unsafe();
+        Vector128<float> transpose = Vector128.Shuffle(norm, Vector128.Create(1, 0, 3, 2));
+        Vector128<float> flip = transpose ^ Vector128.Create(-0.0f, 0, 0, 0);
+        return flip.AsVector3() * width;
     }
 }

@@ -17,7 +17,7 @@ public struct CircleBody(BodyId id) : IShapeId, IRigidBody2D, IShape2D, ITransfo
 
     public Color Color;
 
-    public Trail trail;
+    public Trail? trail;
 
     public BodyId Id { get; set; } = id;
 

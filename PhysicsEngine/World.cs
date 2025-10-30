@@ -168,7 +168,7 @@ public partial class World
 
     private void ImGuiStats()
     {
-        Span<float> values = _updateTimeRing.GetSpan();
+        Span<float> values = _updateTimeRing.GetFullSpan();
         float min = TensorPrimitives.Min(values);
         float avg = TensorPrimitives.Average<float>(values);
         float max = TensorPrimitives.Max(values);
@@ -237,11 +237,13 @@ public partial class World
         Vector2 center = (Vector2) circle.Transform.Position;
 
         float scale = state.Scale;
-        float inv_scale = MathF.ReciprocalEstimate(scale);
+        float inv_scale = 1f / scale;
+        float inv_final_scale = 1f / state.FinalScale;
+
         float radius = (float) circle.Radius;
         if (radius < inv_scale)
         {
-            state.SpriteBatch.DrawPoint(center, circle.Color, inv_scale / state.RenderScale);
+            state.SpriteBatch.DrawPoint(center, circle.Color, inv_final_scale);
         }
         else
         {
@@ -252,7 +254,8 @@ public partial class World
 
         if (_physics.LineTrail)
         {
-            circle.trail.Draw(state.SpriteBatch, circle.Color, (float) circle.Radius * 0.4f);
+            float width = MathHelper.Clamp(radius * 0.4f * inv_final_scale, inv_final_scale, radius);
+            circle.trail?.DrawLines(state.SpriteBatch, circle.Color, width);
         }
     }
 

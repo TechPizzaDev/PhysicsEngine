@@ -13,4 +13,6 @@ public struct DrawState
     public FrameTime Time;
     public RenderPass RenderPass;
     public Viewport Viewport;
+
+    public readonly float FinalScale => Scale / RenderScale;
 }

@@ -44,7 +44,7 @@ public class PhysicsWorld
 
     public void FixedUpdate(double deltaTime)
     {
-        if (deltaTime == 0)
+        if (deltaTime <= 0)
             return;
 
         IntegrateBodies(deltaTime);
@@ -160,7 +160,7 @@ public class PhysicsWorld
 
             if (LineTrail)
             {
-                circle.trail.Update((Vector2) circle.Transform.Position);
+                circle.trail?.Update((Vector2) circle.Transform.Position);
             }
         }
     }
@@ -212,15 +212,15 @@ public class PhysicsWorld
 
     #region Drawing
 
-    private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane)
+    private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane, float thickness)
     {
         Vector2 planeCenter = (Vector2) (plane.Normal * plane.D);
         Vector2 planeOrthog = (Vector2) (plane.Normal.RotateCW() * planeWidth);
-        spriteBatch.DrawLine(planeCenter - planeOrthog, planeCenter + planeOrthog, new Color(Color.Purple, 200), 2f);
+        spriteBatch.DrawLine(planeCenter - planeOrthog, planeCenter + planeOrthog, new Color(Color.Purple, 200), thickness);
     }
 
     private void DrawWindZone(
-        SpriteBatch spriteBatch, Vector2 lineSpacing, RectangleF viewport, float scale, in WindZone zone)
+        SpriteBatch spriteBatch, Vector2 lineSpacing, RectangleF viewport, float lineWidth, in WindZone zone)
     {
         RectangleF fullRect = zone.Bounds.ToRectF();
         RectangleF rect = RectangleF.Intersection(fullRect, viewport);
@@ -256,7 +256,7 @@ public class PhysicsWorld
                 Double2 dir = zone.Direction.Rotate(Double2.SinCos(angle));
                 Vector2 p1 = p0 + (Vector2) (dir * lineSpacing * strength);
 
-                spriteBatch.DrawLine(p0, p1, color, 1f / scale);
+                spriteBatch.DrawLine(p0, p1, color, lineWidth);
             }
         }
     }
@@ -289,16 +289,20 @@ public class PhysicsWorld
         Vector2 viewMax = Vector2.Transform(new Vector2(1, -1), invProj);
         RectangleF viewport = RectangleF.FromPoints(viewMin, viewMax);
 
+        float inv_scale = 1f / state.Scale;
+
+        float planeThick = inv_scale;
         double planeWidth = 10000;
         foreach (ref PlaneBody2D plane in GetStorage<PlaneBody2D>().AsSpan())
         {
-            DrawPlane(spriteBatch, planeWidth, plane.Data);
+            DrawPlane(spriteBatch, planeWidth, plane.Data, planeThick);
         }
 
-        Vector2 lineSpacing = new(50 / (Math.Min(2f, state.Scale * 2)));
+        float lineWidth = 2f * inv_scale;
+        Vector2 lineSpacing = new(50 / (Math.Min(2f, state.Scale)));
         foreach (ref WindZone zone in GetStorage<WindZone>().AsSpan())
         {
-            DrawWindZone(spriteBatch, lineSpacing, viewport, state.Scale, zone);
+            DrawWindZone(spriteBatch, lineSpacing, viewport, lineWidth, zone);
         }
 
         foreach (ref FluidZone zone in GetStorage<FluidZone>().AsSpan())
@@ -325,18 +329,18 @@ public class PhysicsWorld
             }
             flair.FrameCount++;
 
-            DrawFlair(spriteBatch, flairLife, flair);
+            DrawFlair(spriteBatch, flairLife, flair, inv_scale);
         }
     }
 
-    private static void DrawFlair(SpriteBatch spriteBatch, int flairLife, ContactFlair2D flair)
+    private static void DrawFlair(SpriteBatch spriteBatch, int flairLife, ContactFlair2D flair, float scale)
     {
         float progress = flair.FrameCount / (float) flairLife;
         float size = (1f - progress) * 5f + 5f;
 
         Color pointColor = new(Color.MediumPurple, 0.5f - progress * 0.4f);
 
-        spriteBatch.DrawPoint(flair.Point, pointColor, size, 0f, MathF.PI / 4);
+        spriteBatch.DrawPoint(flair.Point, pointColor, size * scale, 0f, MathF.PI / 4);
         // TODO: draw vector?
         //spriteBatch.DrawLine(flair.Point, flair.Point + flair.Direction, Color.Purple);
     }

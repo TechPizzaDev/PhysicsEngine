@@ -16,6 +16,8 @@ public class Ring<T>
 
     public int Capacity => _buffer.Length;
 
+    public int Count => _size;
+
     public bool IsEmpty => _size == 0;
 
     public bool IsFull => _size == Capacity;
@@ -28,9 +30,32 @@ public class Ring<T>
         _buffer = new T[length];
     }
 
-    public Span<T> GetSpan()
+    public Span<T> GetFullSpan()
     {
         return new Span<T>(_buffer);
+    }
+
+    public Span<T> GetHeadSpan()
+    {
+        if (IsEmpty)
+        {
+            return new Span<T>(_buffer, 0, 0);
+        }
+
+        int count = _head < _tail ? (_tail - _head) : (_buffer.Length - _head);
+        return new Span<T>(_buffer, _head, count);
+    }
+
+    public Span<T> GetTailSpan()
+    {
+        if (IsEmpty)
+        {
+            return new Span<T>(_buffer, 0, 0);
+        }
+
+        return _head < _tail
+            ? new Span<T>(_buffer, _tail, 0)
+            : new Span<T>(_buffer, 0, _tail);
     }
 
     public void PushBack(T item)
