@@ -23,7 +23,7 @@ public class Trail
         _points = new Ring<Vector2>(capacity);
     }
 
-    public void Update(Vector2 point)
+    public void Update(Vector2 point, float rangeScale)
     {
         Vector2 delta = point - _lastPoint;
         _lastDelta = delta;
@@ -32,7 +32,7 @@ public class Trail
         _accumulator += delta;
 
         int countThresh = 8;
-        int rangeThresh = 4;
+        float rangeThresh = 20 / rangeScale;
 
         if ((uint) _accCount < (uint) countThresh &&
             _accumulator.LengthSquared() < rangeThresh * rangeThresh)

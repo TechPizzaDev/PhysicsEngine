@@ -83,7 +83,7 @@ public class SandboxWorld : World
             Color = new Color(rng.NextSingle(), rng.NextSingle(), rng.NextSingle(), 1f),
             Radius = rng.Next(20, 40),
             Density = 250f,
-            trail = new Trail(512),
+            trail = new Trail(150),
         });
         circle.Transform.Position = rng.NextVector2(new Vector2(-3000, 5000), new Vector2(3000, 0));
 
@@ -97,13 +97,13 @@ public class SandboxWorld : World
         return ref circle;
     }
 
-    public override void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
+    public override void Update(in UpdateState state)
     {
-        if (input.NewKeyState.IsKeyDown(Keys.F6))
+        if (state.Input.IsKeyDown(Keys.F6))
         {
             SpawnCircle();
         }
 
-        base.Update(input, time, inverseSceneTransform);
+        base.Update(state);
     }
 }

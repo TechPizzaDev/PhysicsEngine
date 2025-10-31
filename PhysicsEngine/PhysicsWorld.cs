@@ -42,12 +42,12 @@ public class PhysicsWorld
     {
     }
 
-    public void FixedUpdate(double deltaTime)
+    public void FixedUpdate(in UpdateState state, double deltaTime)
     {
         if (deltaTime <= 0)
             return;
 
-        IntegrateBodies(deltaTime);
+        IntegrateBodies(deltaTime, state.Scale);
 
         Span<CircleBody> bodies = GetStorage<CircleBody>().AsSpan();
 
@@ -148,7 +148,7 @@ public class PhysicsWorld
         circle.RigidBody.Torque = 0;
     }
 
-    private void IntegrateBodies(double deltaTime)
+    private void IntegrateBodies(double deltaTime, float trailScale)
     {
         double halfDt = deltaTime * 0.5;
 
@@ -160,7 +160,7 @@ public class PhysicsWorld
 
             if (LineTrail)
             {
-                circle.trail?.Update((Vector2) circle.Transform.Position);
+                circle.trail?.Update((Vector2) circle.Transform.Position, trailScale);
             }
         }
     }

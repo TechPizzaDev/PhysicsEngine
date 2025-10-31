@@ -263,17 +263,27 @@ namespace PhysicsEngine
                 _sceneTransformMatrix *
                 Matrix4x4.CreateScale(_renderTargets[RenderPass.Scene].Scale);
 
+            var uiTarget = _renderTargets[RenderPass.UI];
             _uiRenderMatrix =
                 _sceneTransformMatrix *
-                Matrix4x4.CreateScale(_renderTargets[RenderPass.UI].Scale);
+                Matrix4x4.CreateScale(uiTarget.Scale);
 
             Matrix4x4.Invert(_sceneTransformMatrix, out _inverseSceneTransform);
 
-            _imguiRenderer.BeginLayout(input, time, _lastViewport.Bounds.Size.ToVector2(), new Vector2(1));
+            UpdateState state = new()
+            {
+                Input = input,
+                Time = time,
+                Scale = _scale,
+                InverseSceneTransform = _inverseSceneTransform,
+            };
+
+            Vector2 displaySize = uiTarget.Texture?.Size.ToVector2() ?? Vector2.Zero;
+            _imguiRenderer.BeginLayout(input, time, displaySize, new Vector2(1f));
 
             ImGuiUpdate();
 
-            _world.Update(input, time, _inverseSceneTransform);
+            _world.Update(state);
 
             _imguiRenderer.EndLayout();
 

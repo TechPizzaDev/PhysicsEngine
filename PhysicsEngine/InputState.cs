@@ -1,4 +1,5 @@
-﻿using MonoGame.Framework.Input;
+﻿using MonoGame.Framework;
+using MonoGame.Framework.Input;
 
 namespace PhysicsEngine;
 
@@ -16,13 +17,15 @@ public readonly struct InputState(
 
     public KeyModifiers Modifiers => newKeyState.Modifiers;
 
+    public Point MousePosition => newMouseState.Position;
+
     public bool IsKeyPressed(Keys key) => newKeyState.IsKeyDown(key) && oldKeyState.IsKeyUp(key);
 
     public bool IsKeyDown(Keys key) => newKeyState.IsKeyDown(key);
 
     public bool IsLeftMouseButtonPressed()
     {
-        return (newMouseState.LeftButton == ButtonState.Pressed) 
+        return (newMouseState.LeftButton == ButtonState.Pressed)
             && (oldMouseState.LeftButton == ButtonState.Released);
     }
 }

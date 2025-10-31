@@ -66,12 +66,12 @@ public partial class World
 
     public ref T Add<T>(T value) where T : IShapeId => ref Physics.Add(value);
 
-    public virtual void Update(in InputState input, in FrameTime time, Matrix4x4 inverseSceneTransform)
+    public virtual void Update(in UpdateState state)
     {
-        _mousePosition = Vector2.Transform(input.NewMouseState.Position.ToVector2(), inverseSceneTransform);
+        _mousePosition = Vector2.Transform(state.Input.MousePosition, state.InverseSceneTransform);
 
         double deltaTime = 1 / 60.0 * TimeScale;
-        FixedUpdate(deltaTime);
+        FixedUpdate(state, deltaTime);
         TotalTime += deltaTime;
 
         ImGuiUpdate();
@@ -187,10 +187,10 @@ public partial class World
 
     #endregion
 
-    public virtual void FixedUpdate(double deltaTime)
+    public virtual void FixedUpdate(in UpdateState state, double deltaTime)
     {
         long startStamp = Stopwatch.GetTimestamp();
-        _physics.FixedUpdate(deltaTime);
+        _physics.FixedUpdate(state, deltaTime);
         TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
         _updateTimeRing.PushBack((float) endTime.TotalMilliseconds);
     }

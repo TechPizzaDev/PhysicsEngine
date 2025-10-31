@@ -458,7 +458,7 @@ public class ImGuiRenderer
 
             Texture2D backend_tex = new(_graphicsDevice, tex.Width, tex.Height);
             backend_tex.Name = $"ImTextureData [0x{(nuint) tex.Handle:X}]";
-            
+
             uint* pixels = (uint*) tex.GetPixels();
             backend_tex.SetData(new Span<byte>(pixels, tex.GetSizeInBytes()));
 
