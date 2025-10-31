@@ -66,7 +66,7 @@ namespace PhysicsEngine
             WorldFactory.New<Exercise1>(),
             WorldFactory.New<Exercise2>(),
         ];
-        private int _selectedWorldFactory = 0;
+        private int _selectedWorldFactory = 1;
 
         public GameFrame()
         {
