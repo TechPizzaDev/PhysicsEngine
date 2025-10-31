@@ -28,7 +28,7 @@ public static class ExGui
     {
         if (format.IsEmpty)
             format = "%.4g";
-        
+
         using var labelU8 = ExMarshal.ToUtf8(label);
         using var formatU8 = ExMarshal.ToUtf8(format);
         fixed (T* local = values)
@@ -48,7 +48,7 @@ public static class ExGui
     {
         if (format.IsEmpty)
             format = "%.4g";
-        
+
         using var labelU8 = ExMarshal.ToUtf8(label);
         using var formatU8 = ExMarshal.ToUtf8(format);
         fixed (T* local = values)
@@ -152,8 +152,17 @@ public static class ExGui
     {
         using var labelU8 = ExMarshal.ToUtf8(label);
         using var overlayU8 = ExMarshal.ToUtf8(overlay_text);
-        ImGui.PlotHistogram(
-            labelU8.Span, ref MemoryMarshal.GetReference(values), values.Length, values_offset,
+        PlotHistogram(
+            labelU8.Span, values, values_offset,
             overlayU8.Span, scale_min, scale_max, graph_size);
+    }
+
+    public static void PlotHistogram(
+        ReadOnlySpan<byte> label, ReadOnlySpan<float> values, int values_offset,
+        ReadOnlySpan<byte> overlay_text, float scale_min, float scale_max, Vector2 graph_size)
+    {
+        ImGui.PlotHistogram(
+            label, ref MemoryMarshal.GetReference(values), values.Length, values_offset,
+            overlay_text, scale_min, scale_max, graph_size);
     }
 }

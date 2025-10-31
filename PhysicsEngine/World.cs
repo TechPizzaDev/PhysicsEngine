@@ -27,7 +27,9 @@ public partial class World
 
     private Vector2 _mousePosition;
 
+    // TODO: move to GameFrame
     private Ring<float> _updateTimeRing = new(300);
+    private Ring<float> _drawTimeRing = new(300);
 
     #region Variables
 
@@ -52,7 +54,7 @@ public partial class World
 
     #endregion
 
-    public virtual string Name => "World";
+    public virtual string Name => GetType().Name;
 
     public World(Random random)
     {
@@ -168,15 +170,30 @@ public partial class World
 
     private void ImGuiStats()
     {
-        Span<float> values = _updateTimeRing.GetFullSpan();
+        ImGui.PushID("##fixed_update_time"u8);
+        ImGui.Text("Fixed Update Time (ms)"u8);
+        ImGuiPlot(_updateTimeRing.GetFullSpan(), _updateTimeRing.Tail, new Vector2(300, 80));
+        ImGui.PopID();
+
+        ImGui.NewLine();
+
+        ImGui.PushID("##draw_time"u8);
+        ImGui.Text("Draw Time (ms)"u8);
+        ImGui.PushStyleColor(ImGuiCol.PlotHistogram, new Vector4(0.5f, 1f, 0.5f, 1f));
+        ImGuiPlot(_drawTimeRing.GetFullSpan(), _drawTimeRing.Tail, new Vector2(300, 80));
+        ImGui.PopStyleColor();
+        ImGui.PopID();
+    }
+
+    private void ImGuiPlot(Span<float> values, int offset, Vector2 size)
+    {
         float min = TensorPrimitives.Min(values);
         float avg = TensorPrimitives.Average<float>(values);
         float max = TensorPrimitives.Max(values);
 
-        ImGui.Text("Fixed Update Time (ms)");
         float padding = ImGui.GetStyle().FramePadding.X * 2;
-        Vector2 graph_size = new(300 + padding, 100);
-        ExGui.PlotHistogram("##values", values, _updateTimeRing.Tail, null, min, max, graph_size);
+        Vector2 graph_size = new Vector2(padding, 0) + size;
+        ExGui.PlotHistogram("##values"u8, values, offset, null, min, max, graph_size);
 
         ImGui.BulletText($"Min: {min:0.00}");
         ImGui.SameLine();
@@ -201,11 +218,16 @@ public partial class World
     {
         if (state.RenderPass == RenderPass.Scene)
         {
+            long startStamp = Stopwatch.GetTimestamp();
+
             DrawWorld(state);
 
             _physics.DrawWorld(state);
 
             state.SpriteBatch.DrawCircle(_mousePosition, HoverRadius, 16, Color.Red, 1 / state.Scale);
+
+            TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
+            _drawTimeRing.PushBack((float) endTime.TotalMilliseconds);
         }
     }
 
