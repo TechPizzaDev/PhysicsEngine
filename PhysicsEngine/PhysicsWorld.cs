@@ -284,11 +284,6 @@ public class PhysicsWorld
     {
         SpriteBatch spriteBatch = state.SpriteBatch;
 
-        Matrix4x4.Invert(spriteBatch.SpriteEffect.GetFinalMatrix(), out Matrix4x4 invProj);
-        Vector2 viewMin = Vector2.Transform(new Vector2(-1, 1), invProj);
-        Vector2 viewMax = Vector2.Transform(new Vector2(1, -1), invProj);
-        RectangleF viewport = RectangleF.FromPoints(viewMin, viewMax);
-
         float inv_scale = 1f / state.Scale;
 
         float planeThick = inv_scale;
@@ -302,7 +297,7 @@ public class PhysicsWorld
         Vector2 lineSpacing = new(50 / (Math.Min(2f, state.Scale)));
         foreach (ref WindZone zone in GetStorage<WindZone>().AsSpan())
         {
-            DrawWindZone(spriteBatch, lineSpacing, viewport, lineWidth, zone);
+            DrawWindZone(spriteBatch, lineSpacing, state.WorldViewport, lineWidth, zone);
         }
 
         foreach (ref FluidZone zone in GetStorage<FluidZone>().AsSpan())

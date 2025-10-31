@@ -392,6 +392,11 @@ namespace PhysicsEngine
                 rasterizerState: RasterizerState.CullNone,
                 transformMatrix: transform);
 
+            Matrix4x4.Invert(state.SpriteBatch.SpriteEffect.GetFinalMatrix(), out Matrix4x4 invProj);
+            Vector2 viewMin = Vector2.Transform(new Vector2(-1, 1), invProj);
+            Vector2 viewMax = Vector2.Transform(new Vector2(1, -1), invProj);
+            state.WorldViewport = RectangleF.FromPoints(viewMin, viewMax);
+
             _world.Draw(state);
 
             state.SpriteBatch.End();

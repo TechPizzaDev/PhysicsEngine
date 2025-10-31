@@ -215,6 +215,13 @@ public partial class World
 
         foreach (ref CircleBody circle in _physics.GetStorage<CircleBody>().AsSpan())
         {
+            RectangleF fullRect = circle.GetBounds().ToRectF();
+            RectangleF rect = RectangleF.Intersection(fullRect, state.WorldViewport);
+            if (rect.IsEmpty)
+            {
+                continue;
+            }
+
             DrawCircleBody(state, circle);
 
             //spriteBatch.DrawRectangle(circle.Circle.Bounds.ToRectF(), Color.Red);
