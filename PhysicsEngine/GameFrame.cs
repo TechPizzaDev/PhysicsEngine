@@ -103,6 +103,7 @@ namespace PhysicsEngine
             config.MergeMode = 1;
             config.RasterizerMultiply = 1.0f;
             config.RasterizerDensity = 1.0f;
+            config.GlyphOffset = new Vector2(0, 1f);
 
             string path = Path.Combine(Content.RootDirectory, "Font Awesome 7 Free-Solid-900.otf");
             unsafe
@@ -144,6 +145,11 @@ namespace PhysicsEngine
             if (_selectedWorldFactory == _worldFactories.Length)
                 _selectedWorldFactory = 0;
             ResetLevel();
+        }
+
+        private void PlayPauseLevel()
+        {
+            _world.TimeScale = -_world.TimeScale;
         }
 
         private void ViewportChanged(in Viewport viewport)
@@ -214,6 +220,11 @@ namespace PhysicsEngine
             if (_inputState.IsKeyPressed(Keys.F5))
             {
                 ResetLevel();
+            }
+
+            if (_inputState.IsKeyPressed(Keys.Space))
+            {
+                PlayPauseLevel();
             }
 
             if ((_inputState.Modifiers & KeyModifiers.Alt) != 0)
@@ -323,13 +334,6 @@ namespace PhysicsEngine
             ImGui.SetItemTooltip("Level Selector");
 
             ImGui.SameLine();
-            if (ImGui.Button(FontAwesome7.ArrowsRotate))
-            {
-                ResetLevel();
-            }
-            ImGui.SetItemTooltip("Reload Level");
-
-            ImGui.SameLine();
             if (ImGui.ArrowButton("##prev_level", ImGuiDir.Left))
             {
                 PrevLevel();
@@ -342,6 +346,31 @@ namespace PhysicsEngine
                 NextLevel();
             }
             ImGui.SetItemTooltip("Next Level");
+
+            ImGui.SameLine();
+            if (ImGui.Button(FontAwesome7.ArrowsRotate))
+            {
+                ResetLevel();
+            }
+            ImGui.SetItemTooltip("Reload Level");
+
+            ImGui.SameLine();
+            int PlayPauseButton(Utf8Span icon, string tooltip)
+            {
+                if (ImGui.Button(icon))
+                {
+                    PlayPauseLevel();
+                }
+                ImGui.SetItemTooltip(tooltip);
+                return 0;
+            }
+
+            _ = _world.TimeScale switch
+            {
+                < 0f => PlayPauseButton(FontAwesome7.CirclePlay, "Play"),
+                > 0f => PlayPauseButton(FontAwesome7.CirclePause, "Pause"),
+                _ => PlayPauseButton(FontAwesome7.CircleStop, "Timeless"),
+            };
         }
 
         #endregion
