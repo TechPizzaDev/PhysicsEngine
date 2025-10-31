@@ -22,6 +22,11 @@ public class SandboxWorld : World
         }
     }
 
+    public override (Vector2? Position, float? Scale) GetInitialCameraState()
+    {
+        return (null, 1f);
+    }
+
     private void SetupPhysics()
     {
         Add(new PlaneBody2D()

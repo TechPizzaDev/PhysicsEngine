@@ -64,6 +64,8 @@ public partial class World
         SetupEditorProxies();
     }
 
+    public virtual (Vector2? Position, float? Scale) GetInitialCameraState() => default;
+
     public ref T Add<T>() where T : IShapeId => ref Physics.Add<T>();
 
     public ref T Add<T>(T value) where T : IShapeId => ref Physics.Add(value);

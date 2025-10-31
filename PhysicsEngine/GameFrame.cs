@@ -6,6 +6,7 @@ using MonoGame.Framework.Input;
 using PhysicsEngine.Collections;
 using PhysicsEngine.Drawing;
 using PhysicsEngine.Levels;
+using PhysicsEngine.Memory;
 using System;
 using System.IO;
 using System.Numerics;
@@ -85,6 +86,8 @@ namespace PhysicsEngine
         protected override void Initialize()
         {
             Window.AllowUserResizing = true;
+            Window.CurrentState = GameWindowState.Maximized;
+
             IsMouseVisible = true;
 
             base.Initialize();
@@ -128,7 +131,10 @@ namespace PhysicsEngine
         {
             _worldRng = new Random(1234);
             _world = _worldFactories[_selectedWorldFactory].Factory.Invoke(_worldRng);
-            _cameraTarget = new(0, 0);
+
+            var (camPosition, camScale) = _world.GetInitialCameraState();
+            _cameraTarget = camPosition.GetValueOrDefault(_cameraTarget);
+            _scale = camScale.GetValueOrDefault(_scale);
         }
 
         private void PrevLevel()
