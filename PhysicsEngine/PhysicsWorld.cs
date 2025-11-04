@@ -101,7 +101,7 @@ public class PhysicsWorld
         {
             value.Id = MakeBodyId();
         }
-        else if (!IsNewId(id, storage))
+        else if (BodyHelper.IndexOf(id, storage.AsSpan()) != -1)
         {
             ThrowDuplicateId();
         }
@@ -109,20 +109,6 @@ public class PhysicsWorld
         ref T body = ref storage.Add();
         body = value;
         return ref body;
-    }
-
-    private static bool IsNewId<T>(BodyId id, Storage<T> storage)
-        where T : IShapeId
-    {
-        var span = storage.AsSpan();
-        for (int i = 0; i < span.Length; i++)
-        {
-            if (span[i].Id == id)
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static void ThrowDuplicateId() => throw new InvalidOperationException();
