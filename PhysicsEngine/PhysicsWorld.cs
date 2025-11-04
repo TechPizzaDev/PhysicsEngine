@@ -131,22 +131,27 @@ public class PhysicsWorld
 
     #region Force integration
 
-    private void IntegrateBody(double halfDt, Double2 gravity, ref CircleBody circle)
+    private void IntegrateBody(double halfDt, Double2 gravity, ref Transform2D transform, ref RigidBody2D body)
     {
-        if (EnableVelocity)
+        if (body.TryIntegrate())
         {
-            circle.RigidBody.IntegrateVelocity(ref circle.Transform, gravity, halfDt);
-            circle.RigidBody.IntegrateVelocity(gravity, halfDt);
+            double dt = halfDt * (body.SkipFrames + 1);
+            
+            if (EnableVelocity)
+            {
+                body.IntegrateVelocity(ref transform, gravity, dt);
+                body.IntegrateVelocity(gravity, dt);
+            }
+
+            if (EnableAngular)
+            {
+                body.IntegrateAngular(dt);
+                body.IntegrateAngular(ref transform, dt);
+            }
         }
 
-        if (EnableAngular)
-        {
-            circle.RigidBody.IntegrateAngular(halfDt);
-            circle.RigidBody.IntegrateAngular(ref circle.Transform, halfDt);
-        }
-
-        circle.RigidBody.Force = default;
-        circle.RigidBody.Torque = 0;
+        body.Force = default;
+        body.Torque = 0;
     }
 
     private void IntegrateBodies(double deltaTime, float trailScale)
@@ -157,7 +162,7 @@ public class PhysicsWorld
 
         foreach (ref CircleBody circle in GetStorage<CircleBody>().AsSpan())
         {
-            IntegrateBody(halfDt, gravity, ref circle);
+            IntegrateBody(halfDt, gravity, ref circle.Transform, ref circle.RigidBody);
 
             if (LineTrail)
             {

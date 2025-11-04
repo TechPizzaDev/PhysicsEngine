@@ -295,6 +295,9 @@ public partial class World
     {
         ImGui.SeparatorText("RigidBody");
 
+        ExGui.DragScalar("SkipFrames", ref body.SkipFrames);
+        ExGui.DragScalar("CurrentFrame", ref body.CurrentFrame);
+
         ExGui.DragScalar("Torque", ref body.Torque);
         ExGui.DragScalar("AngularVelocity", ref body.AngularVelocity);
         ExGui.DragScalar("RestitutionCoeff", ref body.RestitutionCoeff);

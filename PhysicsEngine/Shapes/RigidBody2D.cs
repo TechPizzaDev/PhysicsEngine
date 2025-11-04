@@ -12,12 +12,26 @@ public struct RigidBody2D : IRigidBody2D
     public double AngularVelocity;
     public double InverseInertia;
     public double RestitutionCoeff;
+    public byte SkipFrames;
+    public byte CurrentFrame;
 
     readonly Double2 IRigidBody2D.Velocity => Velocity;
 
     readonly double IRigidBody2D.InverseMass => InverseMass;
 
     readonly double IRigidBody2D.RestitutionCoeff => RestitutionCoeff;
+
+    public bool TryIntegrate()
+    {
+        if (CurrentFrame == SkipFrames)
+        {
+            CurrentFrame = 0;
+            return true;
+        }
+
+        CurrentFrame++;
+        return false;
+    }
 
     // Acceleration
     //    F = mA
