@@ -13,6 +13,7 @@ public class Trail
 {
     private Ring<Vector2> _points;
 
+    private Vector2 _lastVelocity;
     private Vector2 _lastDelta;
     private Vector2 _lastPoint;
     private Vector2 _accumulator;
@@ -23,13 +24,23 @@ public class Trail
         _points = new Ring<Vector2>(capacity);
     }
 
-    public void Update(Vector2 point, float rangeScale)
+    public void Update(Vector2 point, Vector2 velocity, float rangeScale)
     {
+        float dirChange = Vector2.Dot(_lastVelocity, velocity);
+        _lastVelocity = velocity;
+
+        Vector2 lastPoint = _lastPoint;
+
         Vector2 delta = point - _lastPoint;
         _lastDelta = delta;
         _lastPoint = point;
 
         _accumulator += delta;
+
+        if (dirChange < 0)
+        {
+            _points.PushFront(lastPoint);
+        }
 
         int countThresh = 8;
         float rangeThresh = 20 / rangeScale;
@@ -47,24 +58,37 @@ public class Trail
         _points.PushFront(point);
     }
 
+    public void Push(Vector2 point)
+    {
+        _points.PushFront(point);
+    }
+
     public void DrawLines<C>(SpriteBatch spriteBatch, C color, float width, float depth = 0f)
+        where C : IQuad<Color>
+    {
+        DrawLines(spriteBatch, _lastPoint, _lastDelta, _points, color, width, depth);
+    }
+
+    public static void DrawLines<C>(
+        SpriteBatch spriteBatch, Vector2 origin, Vector2 direction, Ring<Vector2> points,
+        C color, float width, float depth = 0f)
         where C : IQuad<Color>
     {
         Texture2D texture = SpriteBatchShapeExtensions.GetWhitePixelTexture(spriteBatch.GraphicsDevice);
 
-        Vector3 orthoL = DeltaToOrthogonalDir(_lastDelta, width);
-        Vector2 pointL = _lastPoint;
+        Vector3 orthoL = DeltaToOrthogonalDir(direction, width);
+        Vector2 pointL = origin;
 
-        float inv_count = 1f / _points.Capacity;
+        float inv_count = 1f / points.Capacity;
         float ageL = 1f;
 
         for (int j = 0; j < 2; j++)
         {
-            Span<Vector2> points = j == 0 ? _points.GetHeadSpan() : _points.GetTailSpan();
+            Span<Vector2> span = j == 0 ? points.GetHeadSpan() : points.GetTailSpan();
 
-            for (int i = 0; i < points.Length; i++)
+            for (int i = 0; i < span.Length; i++)
             {
-                Vector2 pointR = points[i];
+                Vector2 pointR = span[i];
                 Vector2 delta = pointL - pointR;
                 if (delta == Vector2.Zero)
                 {
@@ -76,6 +100,16 @@ public class Trail
                 float ageR = ageL - inv_count;
                 float widthR = (ageR + 0.1f) / 1.1f * width;
                 Vector3 orthoR = DeltaToOrthogonalDir(delta, widthR);
+                
+                // Try to correct sharp turns.
+                if (Vector3.Dot(orthoR, orthoL) < 0f)
+                {
+                    orthoL = orthoR;
+                    pointL -= RotateCW(orthoL.AsVector128()).AsVector2() * 0.75f;
+                    
+                    //spriteBatch.DrawPoint(pointL, Color.LimeGreen, width * 0.5f);
+                    //spriteBatch.DrawPoint(pointR, Color.Red, width * 0.5f);
+                }
 
                 uint alphaL = (uint) float.ConvertToIntegerNative<int>(ageL * 255f);
                 uint alphaR = (uint) float.ConvertToIntegerNative<int>(ageR * 255f);
@@ -112,11 +146,17 @@ public class Trail
     /// This is effectively a cheap plane rotation.
     /// </summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector3 DeltaToOrthogonalDir(Vector2 delta, float width)
+    public static Vector3 DeltaToOrthogonalDir(Vector2 delta, float width)
     {
         Vector128<float> norm = Vector2.Normalize(delta).AsVector128Unsafe();
-        Vector128<float> transpose = Vector128.Shuffle(norm, Vector128.Create(1, 0, 3, 2));
-        Vector128<float> flip = transpose ^ Vector128.Create(-0.0f, 0, 0, 0);
+        Vector128<float> flip = RotateCW(norm);
         return flip.AsVector3() * width;
+    }
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<float> RotateCW(Vector128<float> x)
+    {
+        Vector128<float> transpose = Vector128.Shuffle(x, Vector128.Create(1, 0, 3, 2));
+        return transpose ^ Vector128.Create(-0.0f, 0, 0, 0);
     }
 }

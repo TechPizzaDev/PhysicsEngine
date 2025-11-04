@@ -136,7 +136,7 @@ public class PhysicsWorld
         if (body.TryIntegrate())
         {
             double dt = halfDt * (body.SkipFrames + 1);
-            
+
             if (EnableVelocity)
             {
                 body.IntegrateVelocity(ref transform, gravity, dt);
@@ -166,7 +166,10 @@ public class PhysicsWorld
 
             if (LineTrail)
             {
-                circle.trail?.Update((Vector2) circle.Transform.Position, trailScale);
+                circle.trail?.Update(
+                    (Vector2) circle.Transform.Position,
+                    (Vector2) circle.RigidBody.Velocity,
+                    trailScale);
             }
         }
     }
@@ -218,11 +221,11 @@ public class PhysicsWorld
 
     #region Drawing
 
-    private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane, float thickness)
+    private static void DrawPlane(SpriteBatch spriteBatch, double planeWidth, Plane2D plane, Color color, float thickness)
     {
         Vector2 planeCenter = (Vector2) (plane.Normal * plane.D);
         Vector2 planeOrthog = (Vector2) (plane.Normal.RotateCW() * planeWidth);
-        spriteBatch.DrawLine(planeCenter - planeOrthog, planeCenter + planeOrthog, new Color(Color.Purple, 200), thickness);
+        spriteBatch.DrawLine(planeCenter - planeOrthog, planeCenter + planeOrthog, color, thickness);
     }
 
     private void DrawWindZone(
@@ -296,7 +299,7 @@ public class PhysicsWorld
         double planeWidth = 10000;
         foreach (ref PlaneBody2D plane in GetStorage<PlaneBody2D>().AsSpan())
         {
-            DrawPlane(spriteBatch, planeWidth, plane.Data, planeThick);
+            DrawPlane(spriteBatch, planeWidth, plane.Data, plane.Color, planeThick);
         }
 
         float lineWidth = 2f * inv_scale;
