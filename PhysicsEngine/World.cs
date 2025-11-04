@@ -66,7 +66,7 @@ public partial class World
 
     public virtual (Vector2? Position, float? Scale) GetInitialCameraState() => default;
 
-    public ref T Add<T>() where T : IShapeId => ref Physics.Add<T>();
+    public ref T Add<T>() where T : IShapeId, new() => ref Physics.Add<T>();
 
     public ref T Add<T>(T value) where T : IShapeId => ref Physics.Add(value);
 
@@ -241,12 +241,13 @@ public partial class World
         {
             RectangleF fullRect = circle.GetBounds().ToRectF();
             RectangleF rect = RectangleF.Intersection(fullRect, state.WorldViewport);
-            if (rect.IsEmpty)
+            bool visible = !rect.IsEmpty;
+
+            DrawCircleBody(state, circle, visible);
+            if (!visible)
             {
                 continue;
             }
-
-            DrawCircleBody(state, circle);
 
             //spriteBatch.DrawRectangle(circle.Circle.Bounds.ToRectF(), Color.Red);
 
@@ -263,7 +264,7 @@ public partial class World
         }
     }
 
-    private void DrawCircleBody(in DrawState state, in CircleBody circle)
+    private void DrawCircleBody(in DrawState state, in CircleBody circle, bool visible)
     {
         Vector2 center = (Vector2) circle.Transform.Position;
 
@@ -272,15 +273,18 @@ public partial class World
         float inv_final_scale = 1f / state.FinalScale;
 
         float radius = (float) circle.Radius;
-        if (radius < inv_scale)
+        if (visible)
         {
-            state.SpriteBatch.DrawPoint(center, circle.Color, inv_final_scale);
-        }
-        else
-        {
-            int sides = int.Clamp((int) ((float) circle.Radius * scale + 3.5f), 6, 42);
-            float thick = MathHelper.Clamp(4f / Math.Max(1f, scale), scale, radius * 2f);
-            state.SpriteBatch.DrawCircle(center, radius, sides, circle.Color, thick);
+            if (radius < inv_scale)
+            {
+                state.SpriteBatch.DrawPoint(center, circle.Color, inv_final_scale);
+            }
+            else
+            {
+                int sides = int.Clamp((int) ((float) circle.Radius * scale + 3.5f), 6, 42);
+                float thick = MathHelper.Clamp(4f / Math.Max(1f, scale), scale, radius * 2f);
+                state.SpriteBatch.DrawCircle(center, radius, sides, circle.Color, thick);
+            }
         }
 
         if (_physics.LineTrail)

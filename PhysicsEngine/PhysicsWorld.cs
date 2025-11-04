@@ -84,9 +84,10 @@ public class PhysicsWorld
     }
 
     public ref T Add<T>()
-        where T : IShapeId
+        where T : IShapeId, new()
     {
         ref T body = ref GetStorage<T>().Add();
+        body = new T();
         body.Id = MakeBodyId();
         return ref body;
     }
