@@ -29,8 +29,8 @@ public class PhysicsWorld
 
     public double ErrorReduction = 0.05;
 
-    public bool EnableVelocity = true;
-    public bool EnableAngular = true;
+    public VelocityMethod VelocityMode = VelocityMethod.Integrate;
+    public VelocityMethod AngularMode = VelocityMethod.Integrate;
 
     public bool LineTrail;
 
@@ -135,18 +135,35 @@ public class PhysicsWorld
     {
         if (body.TryIntegrate())
         {
-            double dt = halfDt * (body.SkipFrames + 1);
+            double frameDt = halfDt * (body.SkipFrames + 1);
+            double fullDt = frameDt + frameDt;
 
-            if (EnableVelocity)
+            switch (VelocityMode)
             {
-                body.IntegrateVelocity(ref transform, gravity, dt);
-                body.IntegrateVelocity(gravity, dt);
+                case VelocityMethod.Naive:
+                    body.IntegrateVelocity(gravity, fullDt);
+                    body.IntegrateVelocity(ref transform, fullDt);
+                    break;
+
+                case VelocityMethod.Integrate:
+                    body.IntegrateVelocity(gravity, frameDt);
+                    body.IntegrateVelocity(ref transform, fullDt);
+                    body.IntegrateVelocity(gravity, frameDt);
+                    break;
             }
 
-            if (EnableAngular)
+            switch (AngularMode)
             {
-                body.IntegrateAngular(dt);
-                body.IntegrateAngular(ref transform, dt);
+                case VelocityMethod.Naive:
+                    body.IntegrateAngular(fullDt);
+                    body.IntegrateAngular(ref transform, fullDt);
+                    break;
+
+                case VelocityMethod.Integrate:
+                    body.IntegrateAngular(frameDt);
+                    body.IntegrateAngular(ref transform, fullDt);
+                    body.IntegrateAngular(frameDt);
+                    break;
             }
         }
 

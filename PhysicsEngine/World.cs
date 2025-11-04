@@ -134,15 +134,35 @@ public partial class World
 
     private void ImGuiPhysics()
     {
-        ImGui.PushItemWidth(80);
+        ImGui.PushItemWidth(90);
         ExGui.DragDouble2("Gravity", ref _physics.Gravity);
 
         ExGui.DragScalar("Time scale", ref TimeScale);
         ExGui.DragScalar("Error reduction", ref _physics.ErrorReduction);
-        ImGui.PopItemWidth();
 
-        ImGui.Checkbox("Velocity", ref _physics.EnableVelocity);
-        ImGui.Checkbox("Angular", ref _physics.EnableAngular);
+        ImGuiVelocityMethod("Velocity", ref _physics.VelocityMode);
+        ImGuiVelocityMethod("Angular", ref _physics.AngularMode);
+        
+        ImGui.PopItemWidth();
+    }
+
+    private void ImGuiVelocityMethod(string label, ref VelocityMethod method)
+    {
+        if (!ImGui.BeginCombo(label, method.ToString()))
+        {
+            return;
+        }
+
+        for (VelocityMethod i = 0; i < VelocityMethod.COUNT; i++)
+        {
+            bool is_selected = method == i;
+            if (ImGui.Selectable(i.ToString(), is_selected))
+                method = i;
+
+            if (is_selected)
+                ImGui.SetItemDefaultFocus();
+        }
+        ImGui.EndCombo();
     }
 
     private void ImGuiLabels()

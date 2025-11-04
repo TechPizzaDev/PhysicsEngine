@@ -19,6 +19,10 @@ public class Trail
     private Vector2 _accumulator;
     private int _accCount = -1;
 
+    public int Capacity => _points.Capacity;
+
+    public float FadeFactor { get; set; } = 1f;
+
     public Trail(int capacity)
     {
         _points = new Ring<Vector2>(capacity);
@@ -60,18 +64,20 @@ public class Trail
 
     public void Push(Vector2 point)
     {
+        _lastDelta = point - _lastPoint;
+        _lastPoint = point;
         _points.PushFront(point);
     }
 
     public void DrawLines<C>(SpriteBatch spriteBatch, C color, float width, float depth = 0f)
         where C : IQuad<Color>
     {
-        DrawLines(spriteBatch, _lastPoint, _lastDelta, _points, color, width, depth);
+        DrawLines(spriteBatch, _lastPoint, _lastDelta, _points, color, FadeFactor, width, depth);
     }
 
     public static void DrawLines<C>(
         SpriteBatch spriteBatch, Vector2 origin, Vector2 direction, Ring<Vector2> points,
-        C color, float width, float depth = 0f)
+        C color, float fade, float width, float depth = 0f)
         where C : IQuad<Color>
     {
         Texture2D texture = SpriteBatchShapeExtensions.GetWhitePixelTexture(spriteBatch.GraphicsDevice);
@@ -79,7 +85,7 @@ public class Trail
         Vector3 orthoL = DeltaToOrthogonalDir(direction, width);
         Vector2 pointL = origin;
 
-        float inv_count = 1f / points.Capacity;
+        float inv_count = fade * (1f / points.Capacity);
         float ageL = 1f;
 
         for (int j = 0; j < 2; j++)
@@ -100,13 +106,13 @@ public class Trail
                 float ageR = ageL - inv_count;
                 float widthR = (ageR + 0.1f) / 1.1f * width;
                 Vector3 orthoR = DeltaToOrthogonalDir(delta, widthR);
-                
+
                 // Try to correct sharp turns.
                 if (Vector3.Dot(orthoR, orthoL) < 0f)
                 {
                     orthoL = orthoR;
                     pointL -= RotateCW(orthoL.AsVector128()).AsVector2() * 0.75f;
-                    
+
                     //spriteBatch.DrawPoint(pointL, Color.LimeGreen, width * 0.5f);
                     //spriteBatch.DrawPoint(pointR, Color.Red, width * 0.5f);
                 }
@@ -152,7 +158,7 @@ public class Trail
         Vector128<float> flip = RotateCW(norm);
         return flip.AsVector3() * width;
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static Vector128<float> RotateCW(Vector128<float> x)
     {

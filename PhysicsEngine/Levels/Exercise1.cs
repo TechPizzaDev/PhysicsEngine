@@ -1,5 +1,4 @@
 ﻿using System;
-using MonoGame.Framework;
 using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
 
@@ -13,7 +12,6 @@ public class Exercise1 : ExerciseWorld
 
         Add(new CircleBody()
         {
-            Color = Color.White,
             Radius = 1,
             Density = 250
         }).CalculateMass();

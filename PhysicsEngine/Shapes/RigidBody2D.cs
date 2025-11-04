@@ -62,16 +62,14 @@ public struct RigidBody2D : IRigidBody2D
         AngularVelocity += Torque * InverseInertia * halfDt;
     }
 
-    public void IntegrateVelocity(ref Transform2D transform, Double2 gravity, double halfDt)
+    public readonly void IntegrateVelocity(ref Transform2D transform, double dt)
     {
-        IntegrateVelocity(gravity, halfDt);
-        transform.Position += Velocity * (halfDt + halfDt);
+        transform.Position += Velocity * dt;
     }
 
-    public void IntegrateAngular(ref Transform2D transform, double halfDt)
+    public readonly void IntegrateAngular(ref Transform2D transform, double dt)
     {
-        IntegrateAngular(halfDt);
-        double rotation = transform.Rotation + AngularVelocity * (halfDt + halfDt);
+        double rotation = transform.Rotation + AngularVelocity * dt;
         transform.Rotation = MathG.NaiveFMod(rotation, Math.PI * 2);
     }
 

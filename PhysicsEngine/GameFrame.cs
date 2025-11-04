@@ -65,6 +65,7 @@ namespace PhysicsEngine
             WorldFactory.New<SandboxWorld>(),
             WorldFactory.New<Exercise1>(),
             WorldFactory.New<Exercise2>(),
+            WorldFactory.New<Exercise4>(),
         ];
         private int _selectedWorldFactory = 1;
 
