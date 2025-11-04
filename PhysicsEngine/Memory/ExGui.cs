@@ -67,6 +67,8 @@ public static class ExGui
             return ImGuiDataType.Float;
         if (type == typeof(int))
             return ImGuiDataType.S32;
+        if (type == typeof(byte))
+            return ImGuiDataType.U8;
 
         static ImGuiDataType ThrowUnsupported() => throw new NotSupportedException();
         return ThrowUnsupported();
@@ -164,5 +166,22 @@ public static class ExGui
         ImGui.PlotHistogram(
             label, ref MemoryMarshal.GetReference(values), values.Length, values_offset,
             overlay_text, scale_min, scale_max, graph_size);
+    }
+
+    public static void RenderFrame(Vector2 p_min, Vector2 p_max, uint fill_col, bool borders, float rounding)
+    {
+        var ctx = ImGui.GetCurrentContext();
+        var list = ctx.CurrentWindow.DrawList;
+        ImGui.AddRectFilled(list, p_min, p_max, fill_col, rounding);
+
+        float border_size = ctx.Style.FrameBorderSize;
+        if (borders && border_size > 0.0f)
+        {
+            uint bs_col = ImGui.GetColorU32(ImGuiCol.BorderShadow);
+            ImGui.AddRect(list, p_min + new Vector2(1, 1), p_max + new Vector2(1, 1), bs_col, rounding, 0, border_size);
+            
+            uint b_col = ImGui.GetColorU32(ImGuiCol.Border);
+            ImGui.AddRect(list, p_min, p_max, b_col, rounding, 0, border_size);
+        }
     }
 }

@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Numerics;
 using Hexa.NET.ImGui;
 using PhysicsEngine.Collections;
+using PhysicsEngine.Drawing;
 using PhysicsEngine.Memory;
 using PhysicsEngine.Numerics;
 using PhysicsEngine.Shapes;
@@ -60,22 +61,6 @@ public partial class World
     }
 
     #endregion
-
-    private void ImGuiCircles()
-    {
-        var culture = CultureInfo.InvariantCulture;
-
-        var circles = _physics.GetStorage<CircleBody>().AsSpan();
-        for (int i = 0; i < circles.Length; i++)
-        {
-            ImGui.PushID(i);
-            if (ImGui.CollapsingHeader("Circle " + i))
-            {
-                ImGuiCircleEditor(ref circles[i], culture);
-            }
-            ImGui.PopID();
-        }
-    }
 
     private void ImGuiShapeEditors()
     {
@@ -232,6 +217,8 @@ public partial class World
         ImGui.ColorEdit3("Color", ref color, ImGuiColorEditFlags.None);
         circle.Color.FromVector(color);
 
+        ImGuiCollisionMaskEditor(ref circle.CollisionMask);
+
         ImGuiTransformEditor(ref circle.Transform, culture);
         ImGuiRigidBodyEditor(ref circle.RigidBody, culture);
     }
@@ -245,6 +232,8 @@ public partial class World
         {
             plane.Data = new Plane2D(normal, d);
         }
+
+        ImGuiCollisionMaskEditor(ref plane.CollisionMask);
     }
 
     private void ImGuiExplosionEditor(ref ExplosionBody2D explosion, CultureInfo culture)
@@ -281,6 +270,105 @@ public partial class World
     {
         ExGui.DragBound2("Bound", ref zone.Bounds);
         ExGui.DragScalar("Density", ref zone.Density);
+    }
+
+    private void ImGuiCollisionMaskEditor(ref CollisionMask mask)
+    {
+        ReadOnlySpan<byte> label = "CollisionMask"u8;
+        ReadOnlySpan<byte> popup_id = "collision_mask_editor"u8;
+
+        float item_w = ImGui.CalcItemWidth();
+        ImGuiStylePtr style = ImGui.GetStyle();
+
+        Vector2 pos = ImGui.GetCursorScreenPos();
+        Vector2 label_size = ImGui.CalcTextSize(label, true);
+
+        ImGui.InvisibleButton(label, new Vector2(item_w - style.FramePadding.X, label_size.Y), ImGuiButtonFlags.EnableNav);
+        if (ImGui.IsItemActive() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+        {
+            ImGui.OpenPopup(popup_id);
+        }
+
+        bool held = ImGui.IsItemActive();
+        bool hovered = ImGui.IsItemHovered();
+
+        uint frame_col = ImGui.GetColorU32((held && hovered)
+            ? ImGuiCol.FrameBgActive
+            : (hovered ? ImGuiCol.FrameBgHovered : ImGuiCol.FrameBg));
+        ExGui.RenderFrame(pos, pos + new Vector2(item_w, label_size.Y), frame_col, true, style.FrameRounding);
+
+        ImGui.SameLine(style.FramePadding.X * 2f);
+        ImGui.TextAligned(0.5f, item_w, $"0x{(uint) mask:X}");
+
+        ImGui.SameLine(item_w + style.FramePadding.X * 3f);
+        ImGui.Text(label);
+
+        if (ImGui.BeginPopup(popup_id))
+        {
+            ImGuiCollisionMaskTable(label, ref mask);
+            ImGui.EndPopup();
+        }
+    }
+
+    private void ImGuiCollisionMaskTable(ReadOnlySpan<byte> label, ref CollisionMask mask)
+    {
+        var flags =
+            ImGuiTableFlags.BordersInner |
+            ImGuiTableFlags.NoPadInnerX |
+            ImGuiTableFlags.NoHostExtendX |
+            ImGuiTableFlags.PreciseWidths |
+            ImGuiTableFlags.SizingFixedFit;
+
+        ImGui.PushStyleVar(ImGuiStyleVar.CellPadding, new Vector2(0f, 0f));
+        if (ImGui.BeginTable(label, 9, flags))
+        {
+            ImGui.TableNextRow(ImGuiTableRowFlags.Headers, 20f);
+
+            ImGui.TableSetColumnIndex(0);
+            if (ImGui.Button($"{FontAwesome7.Hurricane.ToString()}##flip"))
+            {
+                mask = ~mask;
+            }
+
+            for (int col = 0; col < 8; col++)
+            {
+                ImGui.TableSetColumnIndex(col + 1);
+                ImGui.AlignTextToFramePadding();
+                ImGui.TextDisabled(" " + col);
+            }
+
+            int idx = 0;
+            for (int row = 0; row < 4; row++)
+            {
+                ImGui.TableNextRow();
+
+                ImGui.TableSetColumnIndex(0);
+                ImGui.AlignTextToFramePadding();
+                ImGui.TextDisabled($"{row * 8} ");
+
+                for (int col = 0; col < 8; col++)
+                {
+                    ImGui.TableSetColumnIndex(col + 1);
+
+                    var bit = (CollisionMask) (1u << idx);
+                    bool val = (mask & bit) == bit;
+                    unsafe
+                    {
+                        ImGui.Checkbox($"##{idx}", &val);
+                    }
+                    ImGui.SetItemTooltip($"Bit {idx}");
+
+                    if (val)
+                        mask |= bit;
+                    else
+                        mask &= ~bit;
+
+                    idx++;
+                }
+            }
+            ImGui.EndTable();
+        }
+        ImGui.PopStyleVar();
     }
 
     private void ImGuiTransformEditor(ref Transform2D transform, CultureInfo culture)
