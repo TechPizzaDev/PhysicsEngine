@@ -20,7 +20,7 @@ public struct PlaneBody2D : IShapeId, ITransform2D, IRigidBody2D
 
     public readonly Double2 Velocity => default;
 
-    public readonly double InverseMass => 1.0 / 1_000_000_000;
+    public readonly double InverseMass => 0;
 
     public readonly double RestitutionCoeff => 0;
 

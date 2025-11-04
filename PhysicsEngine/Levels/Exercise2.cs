@@ -22,6 +22,7 @@ public class Exercise2 : ExerciseWorld
         });
         circle.CalculateMass();
         circle.RigidBody.Velocity = new Double2(10, 10);
+        circle.RigidBody.RestitutionCoeff = 1f;
 
         Add(new PlaneBody2D()
         {

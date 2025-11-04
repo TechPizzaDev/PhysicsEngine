@@ -381,7 +381,20 @@ public class PhysicsWorld
     {
         double mA = 1.0 / o1.InverseMass;
         double mB = 1.0 / o2.InverseMass;
-        double massRatio = (mA * mB) / (mA + mB);
+
+        double massRatio;
+        if (double.IsInfinity(mA))
+        {
+            massRatio = mB;
+        }
+        else if (double.IsInfinity(mB))
+        {
+            massRatio = mA;
+        }
+        else
+        {
+            massRatio = (mA * mB) / (mA + mB);
+        }
 
         // Collision response.
         double direction = Double2.Dot(o2.Velocity - o1.Velocity, contact.Normal);
