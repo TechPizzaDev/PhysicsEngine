@@ -57,11 +57,11 @@ public class PhysicsWorld
 
         _circleContacts.Clear();
 
-        CircleToCircleContactGenerator gen1 = new(true, IntersectionResult.Cuts);
+        CircleToCircleContactGenerator gen1 = new(true, IntersectionResult.Cuts, CollisionMask.All);
         GenerateContacts(ref gen1, bodies, _circleContacts);
 
         _planeContacts.Clear();
-        CircleToPlaneContactGenerator gen2 = new();
+        CircleToPlaneContactGenerator gen2 = new(CollisionMask.All);
         Span<PlaneBody2D> planes = GetStorage<PlaneBody2D>().AsSpan();
         GenerateContacts(ref gen2, bodies, planes, _planeContacts);
 
@@ -461,8 +461,8 @@ public class PhysicsWorld
             GetContacts<G, CircleBody, T>(output, ref origin, generator, GetStorage<T>().AsSpan());
         }
 
-        Get<CircleToCircleContactGenerator, CircleBody>(new(false, IntersectionResult.Any));
-        Get<CircleToPlaneContactGenerator, PlaneBody2D>(new());
+        Get<CircleToCircleContactGenerator, CircleBody>(new(false, IntersectionResult.Any, CollisionMask.None));
+        Get<CircleToPlaneContactGenerator, PlaneBody2D>(new(CollisionMask.None));
         Get<CircleToExplosionContactGenerator, ExplosionBody2D>(new(IntersectionResult.Any));
         Get<CircleToShapeContactGenerator<WindZone>, WindZone>(new());
         Get<CircleToShapeContactGenerator<FluidZone>, FluidZone>(new());

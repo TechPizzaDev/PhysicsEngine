@@ -5,12 +5,13 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody(BodyId id) : IShapeId, IRigidBody2D, IShape2D, ITransform2D
+public struct CircleBody : IShapeId, IRigidBody2D, IShape2D, ITransform2D
 {
     public static ShapeKind Kind => ShapeKind.Circle;
 
     public Transform2D Transform;
     public RigidBody2D RigidBody;
+    public CollisionMask CollisionMask;
 
     public double Radius;
     public double Density;
@@ -19,7 +20,15 @@ public struct CircleBody(BodyId id) : IShapeId, IRigidBody2D, IShape2D, ITransfo
 
     public Trail? trail;
 
-    public BodyId Id { get; set; } = id;
+    public BodyId Id { get; set; }
+
+    public CircleBody()
+    {
+        CollisionMask = CollisionMask.All;
+        Radius = 1;
+        Density = 0;
+        Color = Color.White;
+    }
 
     public readonly Double2 Velocity => RigidBody.Velocity;
 

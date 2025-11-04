@@ -4,14 +4,22 @@ using PhysicsEngine.Shapes;
 namespace PhysicsEngine.Collision;
 
 struct CircleToCircleContactGenerator(
-    bool requireSharedTrajectory, IntersectionResult mask) : IContactGenerator<CircleBody, CircleBody>
+    bool requireSharedTrajectory,
+    IntersectionResult intersectMask,
+    CollisionMask collisionFilter
+) : IContactGenerator<CircleBody, CircleBody>
 {
     public bool RequireSharedTrajectory = requireSharedTrajectory;
-    public IntersectionResult Mask = mask;
+    public IntersectionResult IntersectMask = intersectMask;
+    public CollisionMask CollisionFilter = collisionFilter;
 
     public readonly bool Generate(ref CircleBody a, ref CircleBody b, out Contact2D contact)
     {
         contact = default;
+        if (!CollisionHelper.HasAnyMask(CollisionFilter, a.CollisionMask, b.CollisionMask))
+        {
+            return false;
+        }
 
         Circle cA = a.Circle;
         Circle cB = b.Circle;
@@ -27,7 +35,7 @@ struct CircleToCircleContactGenerator(
             }
         }
 
-        if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & Mask) == 0)
+        if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & IntersectMask) == 0)
         {
             return false;
         }
