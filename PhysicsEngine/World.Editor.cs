@@ -226,9 +226,16 @@ public partial class World
     private void ImGuiPlaneEditor(ref PlaneBody2D plane, CultureInfo culture)
     {
         Double2 normal = plane.Data.Normal;
+        bool normalChanged = ExGui.DragDouble2("Normal", ref normal);
+
+        if (ImGui.Button("Normalize"))
+        {
+            normal = normal.Normalize();
+            normalChanged = true;
+        }
+
         double d = plane.Data.D;
-        if (ExGui.DragDouble2("Normal", ref normal) |
-            ExGui.DragScalar("D", ref d))
+        if (normalChanged | ExGui.DragScalar("D", ref d))
         {
             plane.Data = new Plane2D(normal, d);
         }
@@ -352,11 +359,12 @@ public partial class World
 
                     var bit = (CollisionMask) (1u << idx);
                     bool val = (mask & bit) == bit;
-                    unsafe
+                    ImGui.Checkbox($"##{idx}", ref val);
+                    if (ImGui.BeginItemTooltip())
                     {
-                        ImGui.Checkbox($"##{idx}", &val);
+                        ImGui.Text($"Bit {idx}");
+                        ImGui.EndTooltip();
                     }
-                    ImGui.SetItemTooltip($"Bit {idx}");
 
                     if (val)
                         mask |= bit;
@@ -384,6 +392,12 @@ public partial class World
         ImGui.SeparatorText("RigidBody");
 
         ExGui.DragScalar("SkipFrames", ref body.SkipFrames);
+        if (ImGui.BeginItemTooltip())
+        {
+            ImGui.Text($"dt = {TimeStep * (body.SkipFrames + 1):g4} s");
+            ImGui.EndTooltip();
+        }
+
         ExGui.DragScalar("CurrentFrame", ref body.CurrentFrame);
 
         ExGui.DragScalar("Torque", ref body.Torque);
