@@ -34,7 +34,8 @@ public partial class World
     #region Variables
 
     public double TotalTime;
-    public double TimeScale = 1f;
+    public double TimeStep = 1 / 60.0;
+    public double TimeScale = 1.0;
 
     public float HoverRadius = 5f;
 
@@ -74,7 +75,7 @@ public partial class World
     {
         _mousePosition = Vector2.Transform(state.Input.MousePosition, state.InverseSceneTransform);
 
-        double deltaTime = 1 / 60.0 * TimeScale;
+        double deltaTime = TimeStep * TimeScale;
         if (deltaTime > 0)
         {
             long startStamp = Stopwatch.GetTimestamp();
@@ -356,47 +357,39 @@ public partial class World
         spriteBatch.DrawLine(origin, origin + end, Color.Green, 2f);
     }
 
-    protected virtual void Append(StringBuilder builder, in CircleBody circle)
+    protected virtual void Append(ref LineAppender builder, in CircleBody circle)
     {
-        var invariant = NumberFormatInfo.InvariantInfo;
-
         if (_labelPosition)
-            builder.AppendLine(invariant, $"P {circle.Transform.Position:0.0}");
+            builder.AppendLine($"P {circle.Transform.Position:0.0}");
         if (_labelAngle)
-            builder.AppendLine(invariant, $"A {circle.Transform.Rotation:0.00}");
+            builder.AppendLine($"A {circle.Transform.Rotation:0.00}");
         if (_labelRadius)
-            builder.AppendLine(invariant, $"R {circle.Radius:0.0}");
+            builder.AppendLine($"R {circle.Radius:0.0}");
         if (_labelDensity)
-            builder.AppendLine(invariant, $"D {circle.Density:0.0}");
+            builder.AppendLine($"D {circle.Density:0.0}");
 
         ref readonly RigidBody2D body = ref circle.RigidBody;
         if (_labelVelocity)
-            builder.AppendLine(invariant, $"V {body.Velocity:0.0}");
+            builder.AppendLine($"V {body.Velocity:0.0}");
         if (_labelAngular)
-            builder.AppendLine(invariant, $"S {body.AngularVelocity:0.00}");
+            builder.AppendLine($"S {body.AngularVelocity:0.00}");
         if (_labelMass)
-            builder.AppendLine(invariant, $"M {1.0 / body.InverseMass:0.0}");
+            builder.AppendLine($"M {1.0 / body.InverseMass:0.0}");
         if (_labelInertia)
-            builder.AppendLine(invariant, $"I {1.0 / body.InverseInertia:0.0}");
+            builder.AppendLine($"I {1.0 / body.InverseInertia:0.0}");
         if (_labelTorque)
-            builder.AppendLine(invariant, $"T {body.Torque:0.00}");
+            builder.AppendLine($"T {body.Torque:0.00}");
     }
 
     private void DrawCircleDebugText(in DrawState state, StringBuilder builder, in CircleBody circle)
     {
         builder.Clear();
-
-        Append(builder, circle);
+        
+        var appender = new LineAppender(builder, NumberFormatInfo.InvariantInfo);
+        Append(ref appender, circle);
 
         if (builder.Length <= 0)
             return;
-
-        var chunks = builder.GetChunks();
-        string nl = Environment.NewLine;
-        if (chunks.MoveNext() && chunks.Current.Span.EndsWith(nl))
-        {
-            builder.Remove(chunks.Current.Length - nl.Length, nl.Length);
-        }
 
         Vector2 origin = (Vector2) circle.Transform.Position;
         Vector2 edge = origin + new Vector2((float) circle.Radius, 0);
