@@ -9,4 +9,10 @@ public static partial class MathG
     {
         return n - T.Truncate(n / d) * d;
     }
+
+    public static T InverseLerp<T>(T a, T b, T value)
+        where T : ISubtractionOperators<T, T, T>, IDivisionOperators<T, T, T>
+    {
+        return (value - a) / (b - a);
+    }
 }

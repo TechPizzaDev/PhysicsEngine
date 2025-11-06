@@ -15,6 +15,6 @@ public abstract class ExerciseWorld : World
 
     public override (Vector2? Position, float? Scale) GetInitialCameraState()
     {
-        return (new Vector2(0, 0), 20);
+        return (new Vector2(0, 0), 40);
     }
 }

@@ -38,19 +38,19 @@ public partial class World
 
     public float HoverRadius = 5f;
 
-    private bool _labelPosition;
-    private bool _labelAngle;
-    private bool _labelRadius;
-    private bool _labelDensity;
-    private bool _labelVelocity;
-    private bool _labelAngular;
-    private bool _labelMass;
-    private bool _labelInertia;
-    private bool _labelTorque;
+    public bool _labelPosition;
+    public bool _labelAngle;
+    public bool _labelRadius;
+    public bool _labelDensity;
+    public bool _labelVelocity;
+    public bool _labelAngular;
+    public bool _labelMass;
+    public bool _labelInertia;
+    public bool _labelTorque;
 
-    private bool _lineVelocity = false;
-    private bool _lineAngle = false;
-    private bool _lineForward = false;
+    public bool _lineVelocity = false;
+    public bool _lineAngle = false;
+    public bool _lineForward = false;
 
     #endregion
 
@@ -75,8 +75,15 @@ public partial class World
         _mousePosition = Vector2.Transform(state.Input.MousePosition, state.InverseSceneTransform);
 
         double deltaTime = 1 / 60.0 * TimeScale;
-        FixedUpdate(state, deltaTime);
-        TotalTime += deltaTime;
+        if (deltaTime > 0)
+        {
+            long startStamp = Stopwatch.GetTimestamp();
+            FixedUpdate(state, deltaTime);
+            TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
+            _updateTimeRing.PushBack((float) endTime.TotalMilliseconds);
+
+            TotalTime += deltaTime;
+        }
 
         ImGuiUpdate();
     }
@@ -142,7 +149,7 @@ public partial class World
 
         ImGuiVelocityMethod("Velocity", ref _physics.VelocityMode);
         ImGuiVelocityMethod("Angular", ref _physics.AngularMode);
-        
+
         ImGui.PopItemWidth();
     }
 
@@ -228,10 +235,7 @@ public partial class World
 
     public virtual void FixedUpdate(in UpdateState state, double deltaTime)
     {
-        long startStamp = Stopwatch.GetTimestamp();
         _physics.FixedUpdate(state, deltaTime);
-        TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
-        _updateTimeRing.PushBack((float) endTime.TotalMilliseconds);
     }
 
     #region Drawing
@@ -272,7 +276,7 @@ public partial class World
             //spriteBatch.DrawRectangle(circle.Circle.Bounds.ToRectF(), Color.Red);
 
             if (_lineAngle)
-                DrawAngle(spriteBatch, circle);
+                DrawAngle(spriteBatch, circle, state.FinalScale);
 
             if (_lineForward)
                 DrawForward(spriteBatch, circle);
@@ -314,7 +318,7 @@ public partial class World
         }
     }
 
-    private static void DrawAngle(SpriteBatch spriteBatch, in CircleBody circle)
+    private static void DrawAngle(SpriteBatch spriteBatch, in CircleBody circle, float scale)
     {
         Vector2 origin = (Vector2) circle.Transform.Position;
 
@@ -322,10 +326,11 @@ public partial class World
         Vector2 dir = new(cos, sin);
 
         float radius = (float) circle.Radius;
-        Vector2 edge = origin + new Vector2(radius - 1) * dir;
+        Vector2 start = origin + new Vector2(radius * 0.5f) * dir;
+        Vector2 edge = origin + new Vector2(radius) * dir;
 
-        float width = MathF.Min(radius, 4f);
-        spriteBatch.DrawLine(origin, edge, Color.Blue, width);
+        float width = (MathF.Min(radius, 1f) * 4f) / scale;
+        spriteBatch.DrawLine(start, edge, Color.Blue, width);
     }
 
     private static void DrawForward(SpriteBatch spriteBatch, in CircleBody circle)
@@ -386,12 +391,30 @@ public partial class World
         if (builder.Length <= 0)
             return;
 
+        var chunks = builder.GetChunks();
+        string nl = Environment.NewLine;
+        if (chunks.MoveNext() && chunks.Current.Span.EndsWith(nl))
+        {
+            builder.Remove(chunks.Current.Length - nl.Length, nl.Length);
+        }
+
         Vector2 origin = (Vector2) circle.Transform.Position;
-        Vector2 pos = origin + new Vector2((float) circle.Radius * state.Scale + 4, -8);
+        Vector2 edge = origin + new Vector2((float) circle.Radius, 0);
+        Vector2 pos = edge + new Vector2(1f, 0);
+
+        var font = state.Assets.Font_Consolas;
+
+        float thickness = 1f / state.Scale;
+        Vector2 scale = new(thickness);
+        SizeF size = font.MeasureString(builder);
 
         state.SpriteBatch.DrawString(
-            state.Assets.Font_Consolas, builder, pos,
-            circle.Color, 0, new Vector2(), new Vector2(0.5f), SpriteFlip.Vertical, 0);
+            font, builder, pos,
+            circle.Color, 0, new Vector2(0), scale, SpriteFlip.Vertical, 0);
+
+        RectangleF rect = RectangleF.Inflate(new(pos, size / state.Scale), scale * 4f);
+        state.SpriteBatch.DrawLine(edge, rect.Position, circle.Color, thickness);
+        state.SpriteBatch.DrawRectangle(rect, circle.Color, thickness);
     }
 
     #endregion

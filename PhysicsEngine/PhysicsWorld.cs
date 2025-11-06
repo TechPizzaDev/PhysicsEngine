@@ -44,9 +44,6 @@ public class PhysicsWorld
 
     public void FixedUpdate(in UpdateState state, double deltaTime)
     {
-        if (deltaTime <= 0)
-            return;
-
         IntegrateBodies(deltaTime, state.Scale);
 
         Span<CircleBody> bodies = GetStorage<CircleBody>().AsSpan();
@@ -71,6 +68,13 @@ public class PhysicsWorld
     }
 
     #region Body storage
+
+    public ref T Get<T>(BodyId id)
+        where T : IShapeId
+    {
+        var storage = GetStorage<T>();
+        return ref storage.Get(BodyHelper.IndexOf(id, storage.AsSpan()));
+    }
 
     public Storage<T> GetStorage<T>()
         where T : IShapeId

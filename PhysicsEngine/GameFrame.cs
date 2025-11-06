@@ -66,6 +66,9 @@ namespace PhysicsEngine
             WorldFactory.New<Exercise1>(),
             WorldFactory.New<Exercise2>(),
             WorldFactory.New<Exercise4>(),
+            WorldFactory.New<Exercise5>(),
+            WorldFactory.New<Exercise6>(),
+            WorldFactory.New<Exercise7>(),
         ];
         private int _selectedWorldFactory = 1;
 
@@ -131,7 +134,14 @@ namespace PhysicsEngine
         private void ResetLevel()
         {
             _worldRng = new Random(1234);
+
+            World? prevWorld = _world;
             _world = _worldFactories[_selectedWorldFactory].Factory.Invoke(_worldRng);
+
+            if (prevWorld != null && _world.GetType() == prevWorld.GetType())
+            {
+                _world.TimeScale = prevWorld.TimeScale;
+            }
 
             var (camPosition, camScale) = _world.GetInitialCameraState();
             _cameraTarget = camPosition.GetValueOrDefault(_cameraTarget);

@@ -10,6 +10,10 @@ public class Exercise1 : ExerciseWorld
     {
         Physics.Gravity = new Double2(0);
 
+        _labelRadius = true;
+        _labelMass = true;
+        _labelInertia = true;
+
         Add(new CircleBody()
         {
             Radius = 1,

@@ -26,14 +26,14 @@ public static class ExGui
         ImGuiSliderFlags flags)
         where T : unmanaged
     {
+        ImGuiDataType ty = TypeToImGui(typeof(T));
         if (format.IsEmpty)
-            format = "%.4g";
+            format = DefaultImGuiFormat(ty);
 
         using var labelU8 = ExMarshal.ToUtf8(label);
         using var formatU8 = ExMarshal.ToUtf8(format);
         fixed (T* local = values)
         {
-            ImGuiDataType ty = TypeToImGui(typeof(T));
             return ImGui.DragScalarN(
                 labelU8.Span, ty, local, values.Length, speed, &min, &max, formatU8.Span, flags);
         }
@@ -46,14 +46,14 @@ public static class ExGui
         ImGuiSliderFlags flags)
         where T : unmanaged
     {
+        ImGuiDataType ty = TypeToImGui(typeof(T));
         if (format.IsEmpty)
-            format = "%.4g";
+            format = DefaultImGuiFormat(ty);
 
         using var labelU8 = ExMarshal.ToUtf8(label);
         using var formatU8 = ExMarshal.ToUtf8(format);
         fixed (T* local = values)
         {
-            ImGuiDataType ty = TypeToImGui(typeof(T));
             return ImGui.DragScalarN(
                 labelU8.Span, ty, local, values.Length, 1f, null, null, formatU8.Span, flags);
         }
@@ -72,6 +72,16 @@ public static class ExGui
 
         static ImGuiDataType ThrowUnsupported() => throw new NotSupportedException();
         return ThrowUnsupported();
+    }
+
+    public static string DefaultImGuiFormat(ImGuiDataType type)
+    {
+        return type switch
+        {
+            ImGuiDataType.Float or
+            ImGuiDataType.Double => "%.4g",
+            _ => "",
+        };
     }
 
     public static bool DragScalar<T>(
@@ -179,7 +189,7 @@ public static class ExGui
         {
             uint bs_col = ImGui.GetColorU32(ImGuiCol.BorderShadow);
             ImGui.AddRect(list, p_min + new Vector2(1, 1), p_max + new Vector2(1, 1), bs_col, rounding, 0, border_size);
-            
+
             uint b_col = ImGui.GetColorU32(ImGuiCol.Border);
             ImGui.AddRect(list, p_min, p_max, b_col, rounding, 0, border_size);
         }
