@@ -63,12 +63,16 @@ namespace PhysicsEngine
         private WorldFactory[] _worldFactories =
         [
             WorldFactory.New<SandboxWorld>(),
+            WorldFactory.New<CrossWaveWorld>(),
             WorldFactory.New<Exercise1>(),
             WorldFactory.New<Exercise2>(),
             WorldFactory.New<Exercise4>(),
             WorldFactory.New<Exercise5>(),
             WorldFactory.New<Exercise6>(),
             WorldFactory.New<Exercise7>(),
+            WorldFactory.New<Exercise8>(),
+            WorldFactory.New<Exercise9>(),
+            WorldFactory.New<Exercise10>(),
         ];
         private int _selectedWorldFactory = 1;
 
