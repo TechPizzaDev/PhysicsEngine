@@ -31,7 +31,7 @@ public class SandboxWorld : World
     {
         Add(new PlaneBody2D()
         {
-            Data = new Plane2D(new Double2(0, -1), 0)
+            Data = new Plane2D(new Double2(0, -1), 1)
         });
 
         Add(new WindZone()
@@ -93,7 +93,7 @@ public class SandboxWorld : World
         circle.Transform.Position = rng.NextVector2(new Vector2(-3000, 5000), new Vector2(3000, 0));
 
         circle.RigidBody.Velocity = new Double2(50, 50);
-        circle.RigidBody.AngularVelocity = 8;
+        circle.RigidBody.AngularVelocity = 0;
         circle.RigidBody.Torque = -150;
         circle.RigidBody.RestitutionCoeff = 0.5;
 

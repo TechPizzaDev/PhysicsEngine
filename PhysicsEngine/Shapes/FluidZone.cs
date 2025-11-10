@@ -9,7 +9,7 @@ public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D
 
     public Bound2 Bounds;
     public double Density;
-    
+
     public BodyId Id { get; set; } = id;
 
     public Double2 Position
@@ -17,6 +17,8 @@ public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D
         readonly get => Bounds.Min;
         set => Bounds = Bounds.WithPosition(value);
     }
+
+    public readonly Double2 Center => Bounds.GetCenter();
 
     public readonly double GetArea() => Bounds.GetArea();
 

@@ -27,6 +27,8 @@ public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
         readonly get => Bounds.Min;
         set => Bounds = Bounds.WithPosition(value);
     }
+    
+    public readonly Double2 Center => Bounds.GetCenter();
 
     public readonly double GetArea() => Bounds.GetArea();
 

@@ -416,8 +416,8 @@ public class PhysicsWorld
         double impulseMag = massRatio * direction;
         Double2 impulse = impulseMag * contact.Normal;
 
-        o1.ApplyImpulse(impulse * (1 + o1.RestitutionCoeff), contact.Point);
-        o2.ApplyImpulse(-impulse * (1 + o2.RestitutionCoeff), contact.Point);
+        o1.ApplyImpulse(impulse * (1 + o1.RestitutionCoeff), contact.Point - o1.Center);
+        o2.ApplyImpulse(-impulse * (1 + o2.RestitutionCoeff), contact.Point - o2.Center);
 
         // Overlap correction.
         double pFactor = errorReduction * massRatio * contact.Depth.GetEuclidean();
