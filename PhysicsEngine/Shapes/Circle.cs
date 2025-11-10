@@ -63,4 +63,15 @@ public readonly struct Circle : IShape2D
         hitB = hit + ortho;
         return result;
     }
+
+    public bool Intersect(Bound2 bound, out Double2 hit, out Distance distance)
+    {
+        Double2 closest = bound.ClosestTo(Origin);
+        hit = closest;
+
+        double distSq = (closest - Origin).LengthSquared();
+        distance = Distance.Squared(distSq);
+
+        return distSq <= Radius * Radius;
+    }
 }
