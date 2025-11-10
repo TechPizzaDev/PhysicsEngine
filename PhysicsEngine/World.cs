@@ -251,7 +251,7 @@ public partial class World
 
             _physics.DrawWorld(state);
 
-            state.SpriteBatch.DrawCircle(_mousePosition, HoverRadius, 16, Color.Red, 1 / state.Scale);
+            state.SpriteBatch.DrawCircle(_mousePosition, HoverRadius, 20, Color.Red, 1 / state.Scale);
 
             TimeSpan endTime = Stopwatch.GetElapsedTime(startStamp);
             _drawTimeRing.PushBack((float) endTime.TotalMilliseconds);

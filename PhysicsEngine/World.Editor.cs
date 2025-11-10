@@ -2,6 +2,7 @@
 using System.Globalization;
 using System.Numerics;
 using Hexa.NET.ImGui;
+using MonoGame.Framework;
 using PhysicsEngine.Collections;
 using PhysicsEngine.Drawing;
 using PhysicsEngine.Memory;
@@ -14,7 +15,7 @@ public partial class World
 {
     public bool UseDegreesInput = true;
 
-    private EnumMap<ShapeKind, EditorProxy> _editors = new();
+    private EnumMap<ShapeKind, Editor> _editors = new();
 
     #region Helpers
 
@@ -23,9 +24,31 @@ public partial class World
         return ExGui.InputAngle(label, ref angle, UseDegreesInput);
     }
 
+    private Color GetEditorColor(in ShapeLocation location)
+    {
+        ColorPalette palette = _editors[location.Kind].GetColorPalette(location);
+        return Color.Lerp(palette[0], palette[1], 0.5f);
+    }
+
+    private string GetEditorName(in ShapeLocation location)
+    {
+        Utf8Span icon = location.Kind switch
+        {
+            ShapeKind.None => FontAwesome7.Notdef,
+            ShapeKind.Editor => FontAwesome7.Binoculars,
+            ShapeKind.Circle => FontAwesome7.Circle,
+            ShapeKind.Plane => FontAwesome7.Slash,
+            ShapeKind.Explosion => FontAwesome7.Bomb,
+            ShapeKind.WindZone => FontAwesome7.Wind,
+            ShapeKind.FluidZone => FontAwesome7.Water,
+            _ => FontAwesome7.Shapes,
+        };
+        return $"{icon.ToString()} {location.Kind} #{location.Id}";
+    }
+
     private string GetEditorLabel(in ShapeLocation location)
     {
-        return $"Editor ({location.Kind} #{location.Id})";
+        return $"Editor {GetEditorName(location)}";
     }
 
     private static int IndexOf(in ShapeLocation location, ReadOnlySpan<ShapeEditor> span)
@@ -82,7 +105,10 @@ public partial class World
         {
             foreach (ref ShapeLocation location in _objectLocations.AsSpan())
             {
-                if (ImGui.MenuItem($"{location.Kind} #{location.Id}"))
+                ImGui.PushStyleColor(ImGuiCol.Text, GetEditorColor(location).ToScaledVector4());
+                bool open = ImGui.MenuItem(GetEditorName(location));
+                ImGui.PopStyleColor();
+                if (open)
                 {
                     OpenEditor(location);
                 }
@@ -114,6 +140,11 @@ public partial class World
 
         if (ImGui.Begin($"Editors ({_openEditors.Count})###editors"))
         {
+            ImGui.SetNextItemWidth(100f);
+            ImGui.DragFloat("Pick Radius", ref HoverRadius, "%g");
+            
+            ImGui.Separator();
+
             if (ImGui.Button("Close all"))
             {
                 _openEditors.Clear();
@@ -130,7 +161,11 @@ public partial class World
                     _openEditors.RemoveAt(i);
                 }
                 ImGui.SameLine();
-                if (ImGui.MenuItem($"{location.Kind} #{location.Id}"))
+
+                ImGui.PushStyleColor(ImGuiCol.Text, GetEditorColor(location).ToScaledVector4());
+                bool open = ImGui.MenuItem(GetEditorName(location));
+                ImGui.PopStyleColor();
+                if (open)
                 {
                     FocusEditor(location);
                 }
@@ -142,24 +177,24 @@ public partial class World
 
     public void SetupEditorProxies()
     {
-        _editors.Fill((in ShapeLocation location, CultureInfo _) =>
+        _editors.Fill(new ProxyEditor((in ShapeLocation location, CultureInfo _) =>
         {
             ImGui.Text("Not implemented: " + location.Kind);
-        });
+        }));
 
-        _editors[ShapeKind.None] = (in ShapeLocation location, CultureInfo _) =>
+        _editors[ShapeKind.None] = new ProxyEditor((in ShapeLocation location, CultureInfo _) =>
         {
             if (location.Kind != ShapeKind.None)
             {
                 throw new ArgumentException("", nameof(location));
             }
             ImGui.Text("Empty");
-        };
+        });
 
         void Set<T>(EditorAction<T> action)
             where T : IShapeId
         {
-            _editors[T.Kind] = MakeEditorProxy(T.Kind, _physics.GetStorage<T>(), action);
+            _editors[T.Kind] = new ProxyEditor<T>(_physics.GetStorage<T>(), action);
         }
 
         Set<CircleBody>(ImGuiCircleEditor);
@@ -169,25 +204,54 @@ public partial class World
         Set<FluidZone>(ImGuiFluidZoneEditor);
     }
 
-    private static EditorProxy MakeEditorProxy<T>(ShapeKind kind, Storage<T> storage, EditorAction<T> action)
+    abstract class Editor
+    {
+        public abstract void Invoke(in ShapeLocation location, CultureInfo culture);
+
+        public virtual ColorPalette GetColorPalette(in ShapeLocation location) => new ColorPalette(Color.White);
+    }
+
+    sealed class ProxyEditor(EditorProxy proxy) : Editor
+    {
+        public override void Invoke(in ShapeLocation location, CultureInfo culture) => proxy.Invoke(location, culture);
+    }
+
+    sealed class ProxyEditor<T>(Storage<T> storage, EditorAction<T> action) : Editor
         where T : IShapeId
     {
-        return (in ShapeLocation location, CultureInfo culture) =>
+        private ref T Get(in ShapeLocation location)
         {
-            if (location.Kind != kind)
+            var span = storage.AsSpan();
+            int index = BodyHelper.IndexOf(location.Id, span);
+            return ref span[index];
+        }
+
+        public override void Invoke(in ShapeLocation location, CultureInfo culture)
+        {
+            if (location.Kind != T.Kind)
             {
                 throw new ArgumentException("", nameof(location));
             }
-            FindEditor(location, storage.AsSpan(), culture, action);
-        };
+
+            action.Invoke(ref Get(location), culture);
+        }
+
+        public override ColorPalette GetColorPalette(in ShapeLocation location)
+        {
+            if (Get(location) is IColor color)
+            {
+                return color.GetColorPalette();
+            }
+            return base.GetColorPalette(location);
+        }
     }
 
     private void ImGuiShapeEditor(in ShapeLocation location, CultureInfo culture)
     {
-        EditorProxy? proxy = _editors[location.Kind];
-        if (proxy != null)
+        Editor? editor = _editors[location.Kind];
+        if (editor != null)
         {
-            proxy.Invoke(location, culture);
+            editor.Invoke(location, culture);
             return;
         }
 
@@ -197,13 +261,6 @@ public partial class World
     private delegate void EditorProxy(in ShapeLocation location, CultureInfo culture);
 
     private delegate void EditorAction<T>(ref T item, CultureInfo culture);
-
-    private static void FindEditor<T>(in ShapeLocation location, Span<T> span, CultureInfo culture, EditorAction<T> action)
-        where T : IShapeId
-    {
-        int index = BodyHelper.IndexOf(location.Id, span);
-        action.Invoke(ref span[index], culture);
-    }
 
     private void ImGuiCircleEditor(ref CircleBody circle, CultureInfo culture)
     {

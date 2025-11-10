@@ -1,17 +1,18 @@
-﻿using MonoGame.Framework;
+﻿using System.Numerics;
+using MonoGame.Framework;
 using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct PlaneBody2D : IShapeId, ITransform2D, IRigidBody2D
+public struct PlaneBody2D : IShapeId, ITransform2D, IRigidBody2D, IColor
 {
     public static ShapeKind Kind => ShapeKind.Plane;
 
     public Plane2D Data;
-    public Color Color;
     public CollisionMask CollisionMask;
 
     public BodyId Id { get; set; }
+    public Color Color { get; set; }
 
     public PlaneBody2D()
     {
@@ -26,7 +27,7 @@ public struct PlaneBody2D : IShapeId, ITransform2D, IRigidBody2D
     public readonly double InverseMass => 0;
 
     public readonly double RestitutionCoeff => 0;
-
+    
     public readonly void ApplyForce(Double2 force)
     {
     }

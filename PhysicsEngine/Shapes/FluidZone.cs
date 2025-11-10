@@ -1,9 +1,10 @@
 ﻿using System;
+using MonoGame.Framework;
 using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D
+public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D, IColor
 {
     public static ShapeKind Kind => ShapeKind.FluidZone;
 
@@ -19,6 +20,10 @@ public struct FluidZone(BodyId id) : IShapeId, IZone2D, ITransform2D
     }
 
     public readonly Double2 Center => Bounds.GetCenter();
+
+    public readonly Color Color { get => Color.DeepSkyBlue; set { } }
+
+    public readonly ColorPalette GetColorPalette() => new([Color, Color.Blue]);
 
     public readonly double GetArea() => Bounds.GetArea();
 

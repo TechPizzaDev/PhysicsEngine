@@ -1,9 +1,10 @@
 ﻿using System.Numerics;
+using MonoGame.Framework;
 using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
+public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D, IColor
 {
     public static ShapeKind Kind => ShapeKind.WindZone;
 
@@ -19,7 +20,7 @@ public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
     public double TurbulenceDepth;
     public int TurbulenceSeed;
     public double Time;
-    
+
     public BodyId Id { get; set; } = id;
 
     public Double2 Position
@@ -27,8 +28,12 @@ public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
         readonly get => Bounds.Min;
         set => Bounds = Bounds.WithPosition(value);
     }
-    
+
     public readonly Double2 Center => Bounds.GetCenter();
+
+    public readonly Color Color { get => Color.LimeGreen; set { } }
+
+    public readonly ColorPalette GetColorPalette() => new([Color, Color.Lime, new Color(0, 255, 0)]);
 
     public readonly double GetArea() => Bounds.GetArea();
 
@@ -58,7 +63,7 @@ public struct WindZone(BodyId id) : IShapeId, IZone2D, ITransform2D
             return (0, 0);
 
         Vector2 p = (Vector2) (position * TurbulenceScale);
-        
+
         double noise = MathG.Simplex(p.X, p.Y, (float) Time, TurbulenceSeed);
         return (noise * TurbulenceAngle, (noise + 2) / 3f * TurbulenceIntensity);
     }

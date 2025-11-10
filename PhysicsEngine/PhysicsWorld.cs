@@ -244,8 +244,9 @@ public class PhysicsWorld
             return;
         }
 
-        spriteBatch.FillRectangle(fullRect, new Color(Color.Lime, 24));
-        spriteBatch.DrawRectangle(fullRect, new Color(Color.LimeGreen, 200));
+        ColorPalette palette = zone.GetColorPalette();
+        spriteBatch.FillRectangle(fullRect, new Color(palette[1], 24));
+        spriteBatch.DrawRectangle(fullRect, new Color(palette[0], 200));
 
         if (WindFlowLineOpacity <= 0f)
         {
@@ -259,7 +260,8 @@ public class PhysicsWorld
         origin.Y = float.Ceiling(origin.Y);
         origin = origin * lineSpacing + lineSpacing / 2;
 
-        var color = QuadCorner<Color>.Vertical(new(0, 1f, 0, WindFlowLineOpacity), new(0, 255, 0, 0));
+        var palColor = palette[2];
+        var lineColor = QuadCorner<Color>.Vertical(new(palColor, WindFlowLineOpacity), new(palColor, 0));
 
         for (int y = 0; y < rows; y++)
         {
@@ -271,7 +273,7 @@ public class PhysicsWorld
                 Double2 dir = zone.Direction.Rotate(Double2.SinCos(angle));
                 Vector2 p1 = p0 + (Vector2) (dir * lineSpacing * strength);
 
-                spriteBatch.DrawLine(p0, p1, color, lineWidth);
+                spriteBatch.DrawLine(p0, p1, lineColor, lineWidth);
             }
         }
     }
@@ -279,8 +281,9 @@ public class PhysicsWorld
     private static void DrawFluidZone(SpriteBatch spriteBatch, in FluidZone zone)
     {
         RectangleF rect = zone.Bounds.ToRectF();
-        spriteBatch.FillRectangle(rect, new Color(Color.Blue, 24));
-        spriteBatch.DrawRectangle(rect, new Color(Color.DeepSkyBlue, 200));
+        ColorPalette palette = zone.GetColorPalette();
+        spriteBatch.FillRectangle(rect, new Color(palette[1], 24));
+        spriteBatch.DrawRectangle(rect, new Color(palette[0], 200));
     }
 
     private static void DrawExplosionBody(SpriteBatch spriteBatch, in ExplosionBody2D explosion)
@@ -291,8 +294,9 @@ public class PhysicsWorld
 
         int progress = (int) Math.Clamp((explosion.Time / explosion.Interval) * sides, 0, sides);
 
-        spriteBatch.DrawSlicedCircle(center, radius, sides, sides - progress, Color.Yellow, 2, clockwise: false);
-        spriteBatch.DrawSlicedCircle(center, radius + 1, sides, progress, Color.Red, 4, clockwise: true);
+        ColorPalette palette = explosion.GetColorPalette();
+        spriteBatch.DrawSlicedCircle(center, radius, sides, sides - progress, palette[1], 2, clockwise: false);
+        spriteBatch.DrawSlicedCircle(center, radius + 1, sides, progress, palette[0], 4, clockwise: true);
     }
 
     public void DrawWorld(in DrawState state)

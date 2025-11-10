@@ -106,7 +106,7 @@ namespace PhysicsEngine
             ImFontConfig config;
             config.FontDataOwnedByAtlas = 1;
             config.GlyphMinAdvanceX = 13.0f; // monospaced
-            config.GlyphMaxAdvanceX = float.MaxValue;
+            config.GlyphMaxAdvanceX = 13.0f;
             config.MergeMode = 1;
             config.RasterizerMultiply = 1.0f;
             config.RasterizerDensity = 1.0f;

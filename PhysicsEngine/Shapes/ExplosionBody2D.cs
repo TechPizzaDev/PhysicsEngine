@@ -1,9 +1,10 @@
 ﻿using System;
+using MonoGame.Framework;
 using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct ExplosionBody2D(BodyId id) : IShapeId, IShape2D, ITransform2D
+public struct ExplosionBody2D(BodyId id) : IShapeId, IShape2D, ITransform2D, IColor
 {
     public static ShapeKind Kind => ShapeKind.Explosion;
 
@@ -23,6 +24,10 @@ public struct ExplosionBody2D(BodyId id) : IShapeId, IShape2D, ITransform2D
     }
 
     public readonly Circle Circle => new(Transform.Position, Radius);
+
+    public readonly Color Color { get => Color.Red; set { } }
+
+    public readonly ColorPalette GetColorPalette() => new([Color, Color.Yellow]);
 
     public readonly Bound2 GetBounds() => Circle.GetBounds();
 

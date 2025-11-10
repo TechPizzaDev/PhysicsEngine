@@ -5,7 +5,7 @@ using PhysicsEngine.Numerics;
 
 namespace PhysicsEngine.Shapes;
 
-public struct CircleBody : IShapeId, IRigidBody2D, IShape2D, ITransform2D
+public struct CircleBody : IShapeId, IRigidBody2D, IShape2D, ITransform2D, IColor
 {
     public static ShapeKind Kind => ShapeKind.Circle;
 
@@ -16,11 +16,10 @@ public struct CircleBody : IShapeId, IRigidBody2D, IShape2D, ITransform2D
     public double Radius;
     public double Density;
 
-    public Color Color;
-
     public Trail? trail;
 
     public BodyId Id { get; set; }
+    public Color Color { get; set; }
 
     public CircleBody()
     {
