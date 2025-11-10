@@ -24,48 +24,43 @@ public readonly struct Circle : IShape2D
 
     public double GetArea() => Radius * Radius * Math.PI;
 
-    public bool Intersect(Circle circle, out double depthSquared)
+    public IntersectionResult Intersect(Circle circle, out Double2 hit, out Distance distance, out Distance edge)
     {
         double rA = Radius;
         double rB = circle.Radius;
 
-        double rSum = rA + rB;
-        double rSq = rSum * rSum;
-
         Double2 delta = circle.Origin - Origin;
-        double distSq = delta.LengthSquared();
-        depthSquared = distSq;
+        double dSq = delta.LengthSquared();
+        double eSq = (rA * rA - rB * rB + dSq) / (dSq + dSq);
 
-        return distSq <= rSq;
+        hit = Origin + eSq * delta;
+        distance = Distance.Squared(dSq);
+        edge = Distance.Squared(eSq);
+
+        double r1 = rA + rB;
+        double r2 = rA - rB;
+        bool overlaps = dSq <= (r1 * r1);
+        bool cuts = dSq >= (r2 * r2);
+        return IntersectionHelper.MakeResult(overlaps, cuts);
     }
 
-    public IntersectionResult Intersect(Circle circle, out Double2 hitA, out Double2 hitB, out double distance)
+    public IntersectionResult Intersect(
+        Circle circle, out Double2 hitA, out Double2 hitB, out Distance distance, out Distance edge)
     {
-        Double2 delta = circle.Origin - Origin;
-        double dist = Math.Sqrt(delta.LengthSquared());
-        delta /= dist;
-
-        double rA = Radius;
-        double rB = circle.Radius;
-        distance = dist;
-
-        bool overlaps = dist <= rA + rB;
-        bool cuts = dist >= Math.Abs(rA - rB);
-        IntersectionResult result = IntersectionHelper.MakeResult(overlaps, cuts);
+        IntersectionResult result = Intersect(circle, out Double2 hit, out distance, out edge);
         if (result == IntersectionResult.None)
         {
-            hitA = default;
-            hitB = default;
+            hitA = hit;
+            hitB = hit;
             return result;
         }
 
-        double a = (rA * rA - rB * rB + dist * dist) / (2 * dist);
-        double height = Math.Sqrt(Math.Abs(rA * rA - a * a));
+        Double2 delta = circle.Origin - Origin;
+        double height = Math.Sqrt(Math.Abs(Radius * Radius - edge.GetSquared()));
 
-        Double2 p = Origin + a * delta;
-        hitA = p + height * delta.RotateCCW();
-        hitB = p + height * delta.RotateCW();
-
+        Double2 ortho = (delta * height).RotateCW();
+        hitA = hit - ortho;
+        hitB = hit + ortho;
         return result;
     }
 }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Diagnostics.CodeAnalysis;
+﻿using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -12,6 +11,8 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
 {
     private readonly Vector128<double> _value;
 
+    public static Double2 Zero => new(Vector128<double>.Zero);
+
     public Double2(Vector128<double> value) => _value = value;
 
     public Double2(double x, double y) => _value = Vector128.Create(x, y);
@@ -20,7 +21,7 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
 
     public Double2(ReadOnlySpan<double> values) => _value = Vector128.Create(values);
 
-    public double X => _value.GetElement(0);
+    public double X => _value.ToScalar();
 
     public double Y => _value.GetElement(1);
 
@@ -31,6 +32,10 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
     public double Length() => Math.Sqrt(LengthSquared());
 
     public double LengthSquared() => Dot(this, this);
+
+    public Double2 Abs() => new(Vector128.Abs(_value));
+
+    public Double2 Clamp(Double2 min, Double2 max) => new(Vector128.ClampNative(_value, min._value, max._value));
 
     public Double2 Normalize() => this / Length();
 
@@ -44,13 +49,17 @@ public readonly struct Double2 : IEquatable<Double2>, ISpanFormattable
 
     public Double2 Floor() => new(Vector128.Floor(_value));
 
-    public Double2 Min(Double2 other) => new(Vector128.Min(_value, other._value));
+    public Double2 Min(Double2 other) => new(Vector128.MinNative(_value, other._value));
 
-    public Double2 Max(Double2 other) => new(Vector128.Max(_value, other._value));
+    public Double2 Max(Double2 other) => new(Vector128.MaxNative(_value, other._value));
 
     public Double2 Rotate(Double2 sinCos) => this * sinCos + RotateCW() * sinCos;
 
-    public double MaxAcross() => Math.Max(X, Y);
+    public double AddAcross() => Vector128.Sum(_value);
+
+    public double MinAcross() => Min(Transpose()).X;
+
+    public double MaxAcross() => Max(Transpose()).X;
 
     public bool Equals(Double2 other) => _value == other._value;
 

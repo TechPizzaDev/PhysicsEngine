@@ -39,7 +39,7 @@ public readonly struct Bound2 : IEquatable<Bound2>, ISpanFormattable, IShape2D
         Vector128<double> size = Max.AsVector128() - Min.AsVector128();
         return size.GetElement(1) * size.GetElement(0);
     }
-    
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Double2 GetCenter()
     {
@@ -50,11 +50,15 @@ public readonly struct Bound2 : IEquatable<Bound2>, ISpanFormattable, IShape2D
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public Vector256<double> AsVector256() => Vector256.Create(Min.AsVector128(), Max.AsVector128());
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public Double2 ClosestTo(Double2 point) => Min + (point - Min).Clamp(Double2.Zero, Size);
 
     public bool Equals(Bound2 other) => AsVector256() == other.AsVector256();
 
     public Bound2 WithPosition(Double2 position) => new(position, position + Size);
-
+    
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public RectangleF ToRectF()
     {
         Vector128<double> min = Min.AsVector128();

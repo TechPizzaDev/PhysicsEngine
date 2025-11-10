@@ -24,19 +24,29 @@ public readonly struct Plane2D
         return DistanceTo(circle.Origin) <= circle.Radius;
     }
 
-    public bool Intersect(Circle circle, out Double2 hitA, out Double2 hitB, out double depth)
+    public bool Intersect(Circle circle, out Double2 hit, out Distance depth)
     {
-        double dist = DistanceTo(circle.Origin);
+        double d = DistanceTo(circle.Origin);
+        double dSq = d * d;
+        double rSq = circle.Radius * circle.Radius;
 
-        double r = circle.Radius;
-        double overlap = Math.Sqrt(Math.Abs(r * r - dist * dist));
-        depth = overlap;
-        
-        Double2 ortho = Normal.RotateCW() * overlap;
-        Double2 near = circle.Origin - Normal * dist;
-        hitA = near - ortho;
-        hitB = near + ortho;
+        depth = Distance.Squared(Math.Abs(rSq - dSq));
+        hit = circle.Origin - Normal * d;
+        return dSq <= rSq;
+    }
 
-        return Math.Abs(dist) <= r;
+    public bool Intersect(Circle circle, out Double2 hitA, out Double2 hitB, out Distance depth)
+    {
+        if (!Intersect(circle, out Double2 hit, out depth))
+        {
+            hitA = hit;
+            hitB = hit;
+            return false;
+        }
+
+        Double2 ortho = Normal.RotateCW() * depth.GetEuclidean();
+        hitA = hit - ortho;
+        hitB = hit + ortho;
+        return true;
     }
 }
