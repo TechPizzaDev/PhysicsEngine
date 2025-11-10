@@ -389,6 +389,13 @@ public class PhysicsWorld
         where T1 : ITransform2D, IRigidBody2D
         where T2 : ITransform2D, IRigidBody2D
     {
+        double direction = Double2.Dot(o2.Velocity - o1.Velocity, contact.Normal);
+        if (direction > 0)
+        {
+            // objects are moving away
+            return;
+        }
+
         double mA = 1.0 / o1.InverseMass;
         double mB = 1.0 / o2.InverseMass;
 
@@ -405,9 +412,8 @@ public class PhysicsWorld
         {
             massRatio = (mA * mB) / (mA + mB);
         }
-
+        
         // Collision response.
-        double direction = Double2.Dot(o2.Velocity - o1.Velocity, contact.Normal);
         double impulseMag = massRatio * direction;
         Double2 impulse = impulseMag * contact.Normal;
 

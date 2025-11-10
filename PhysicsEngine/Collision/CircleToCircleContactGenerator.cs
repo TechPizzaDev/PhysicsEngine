@@ -24,17 +24,6 @@ struct CircleToCircleContactGenerator(
         Circle cA = a.Circle;
         Circle cB = b.Circle;
 
-        Double2 normal = cB.Origin - cA.Origin;
-        if (RequireSharedTrajectory)
-        {
-            Double2 v = b.Velocity - a.Velocity;
-            if (Double2.Dot(v, normal) > 0)
-            {
-                // circles are moving apart
-                return false;
-            }
-        }
-
         if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & IntersectMask) == 0)
         {
             return false;
@@ -42,7 +31,7 @@ struct CircleToCircleContactGenerator(
 
         contact = new Contact2D()
         {
-            Normal = normal / distance,
+            Normal = (cB.Origin - cA.Origin) / distance,
             Point = (hitA + hitB) / 2,
             Depth = cA.Radius + cB.Radius - distance
         };
