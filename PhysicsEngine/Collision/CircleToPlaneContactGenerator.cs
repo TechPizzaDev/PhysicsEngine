@@ -9,25 +9,24 @@ public struct CircleToPlaneContactGenerator(
 {
     public CollisionMask CollisionFilter = collisionFilter;
 
-    public bool Generate(ref CircleBody a, ref PlaneBody2D plane, out Contact2D contact)
+    public readonly void Generate<C>(ref CircleBody a, ref PlaneBody2D plane, C contacts)
+        where C : IConsumer<Contact2D>
     {
-        contact = default;
         if (!CollisionHelper.HasAnyMask(CollisionFilter, a.CollisionMask, plane.CollisionMask))
         {
-            return false;
+            return;
         }
 
-        if (!plane.Data.Intersect(a.Circle, out Double2 hitA, out Double2 hitB, out double depth))
+        if (!plane.Data.Intersect(a.Circle, out Double2 hit, out Distance depth))
         {
-            return false;
+            return;
         }
 
-        contact = new Contact2D()
+        contacts.Accept(new Contact2D()
         {
             Normal = plane.Data.Normal,
-            Point = (hitA + hitB) / 2,
+            Point = hit,
             Depth = depth
-        };
-        return true;
+        });
     }
 }

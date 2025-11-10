@@ -13,28 +13,28 @@ struct CircleToCircleContactGenerator(
     public IntersectionResult IntersectMask = intersectMask;
     public CollisionMask CollisionFilter = collisionFilter;
 
-    public readonly bool Generate(ref CircleBody a, ref CircleBody b, out Contact2D contact)
+    public readonly void Generate<C>(ref CircleBody a, ref CircleBody b, C contacts)
+        where C : IConsumer<Contact2D>
     {
-        contact = default;
         if (!CollisionHelper.HasAnyMask(CollisionFilter, a.CollisionMask, b.CollisionMask))
         {
-            return false;
+            return;
         }
 
         Circle cA = a.Circle;
         Circle cB = b.Circle;
 
-        if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & IntersectMask) == 0)
+        if ((cA.Intersect(cB, out Double2 hit, out Distance distance, out _) & IntersectMask) == 0)
         {
-            return false;
+            return;
         }
 
-        contact = new Contact2D()
+        double d = distance.GetEuclidean();
+        contacts.Accept(new Contact2D()
         {
-            Normal = (cB.Origin - cA.Origin) / distance,
-            Point = (hitA + hitB) / 2,
-            Depth = cA.Radius + cB.Radius - distance
-        };
-        return true;
+            Normal = (cB.Origin - cA.Origin) / d,
+            Point = hit,
+            Depth = Distance.Euclidean(cA.Radius + cB.Radius - d),
+        });
     }
 }

@@ -8,26 +8,23 @@ struct CircleToExplosionContactGenerator(
 {
     public IntersectionResult Mask = mask;
 
-    public readonly bool Generate(ref CircleBody a, ref ExplosionBody2D b, out Contact2D contact)
+    public readonly void Generate<C>(ref CircleBody a, ref ExplosionBody2D b, C contacts)
+        where C : IConsumer<Contact2D>
     {
-        contact = default;
-
         Circle cA = a.Circle;
         Circle cB = b.Circle;
 
-        if ((cA.Intersect(cB, out Double2 hitA, out Double2 hitB, out double distance) & Mask) == 0)
+        if ((cA.Intersect(cB, out Double2 hit, out Distance distance, out _) & Mask) == 0)
         {
-            return false;
+            return;
         }
-        
-        Double2 normal = cB.Origin - cA.Origin;
 
-        contact = new Contact2D()
+        double d = distance.GetEuclidean();
+        contacts.Accept(new Contact2D()
         {
-            Normal = normal / distance,
-            Point = (hitA + hitB) / 2,
-            Depth = cA.Radius + cB.Radius - distance
-        };
-        return true;
+            Normal = (cB.Origin - cA.Origin) / d,
+            Point = hit,
+            Depth = Distance.Euclidean(cA.Radius + cB.Radius - d)
+        });
     }
 }

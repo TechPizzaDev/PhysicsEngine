@@ -6,23 +6,19 @@ namespace PhysicsEngine.Collision;
 public readonly struct CircleToShapeContactGenerator<TShape> : IContactGenerator<CircleBody, TShape>
     where TShape : IShape2D
 {
-    public bool Generate(ref CircleBody a, ref TShape shape, out Contact2D contact)
+    public readonly void Generate<C>(ref CircleBody a, ref TShape shape, C contacts)
+        where C : IConsumer<Contact2D>
     {
-        contact = default;
-
-        // TODO: proper circle-to-bounds intersection
-        var intersection = shape.GetBounds().Intersect(a.Circle.GetBounds());
-        if (!intersection.HasArea())
+        if (!a.Circle.Intersect(shape.GetBounds(), out Double2 hit, out Distance distance))
         {
-            return false;
+            return;
         }
 
-        contact = new Contact2D()
+        contacts.Accept(new Contact2D()
         {
-            Normal = new Double2(0),
-            Point = intersection.GetCenter(),
-            Depth = intersection.Size.MaxAcross()
-        };
-        return true;
+            Normal = new Double2(0), // TODO: non-zero normal?
+            Point = hit,
+            Depth = distance,
+        });
     }
 }

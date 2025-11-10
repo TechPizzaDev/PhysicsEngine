@@ -53,14 +53,13 @@ public class PhysicsWorld
         ApplyExplosions(deltaTime, GetStorage<ExplosionBody2D>().AsSpan(), bodies);
 
         _circleContacts.Clear();
-
         CircleToCircleContactGenerator gen1 = new(true, IntersectionResult.Cuts, CollisionMask.All);
-        GenerateContacts(ref gen1, bodies, _circleContacts);
+        GenerateContacts(_circleContacts, ref gen1, bodies);
 
         _planeContacts.Clear();
         CircleToPlaneContactGenerator gen2 = new(CollisionMask.All);
         Span<PlaneBody2D> planes = GetStorage<PlaneBody2D>().AsSpan();
-        GenerateContacts(ref gen2, bodies, planes, _planeContacts);
+        GenerateContacts(_planeContacts, ref gen2, bodies, planes);
 
         SolveContacts(ErrorReduction, _circleContacts.AsSpan(), bodies, bodies);
 
@@ -380,7 +379,7 @@ public class PhysicsWorld
             _contactFlairs.Add() = new ContactFlair2D()
             {
                 Point = (Vector2) contact.Point,
-                Direction = (Vector2) (contact.Normal * contact.Depth),
+                Direction = (Vector2) (contact.Normal * contact.Depth.GetEuclidean()),
             };
         }
     }
@@ -412,7 +411,7 @@ public class PhysicsWorld
         {
             massRatio = (mA * mB) / (mA + mB);
         }
-        
+
         // Collision response.
         double impulseMag = massRatio * direction;
         Double2 impulse = impulseMag * contact.Normal;
@@ -421,14 +420,14 @@ public class PhysicsWorld
         o2.ApplyImpulse(-impulse * (1 + o2.RestitutionCoeff), contact.Point);
 
         // Overlap correction.
-        double pFactor = errorReduction * massRatio * contact.Depth;
+        double pFactor = errorReduction * massRatio * contact.Depth.GetEuclidean();
         o1.Position -= pFactor * o1.InverseMass * contact.Normal;
         o2.Position += pFactor * o2.InverseMass * contact.Normal;
     }
 
-    public static void GenerateContacts<TGen, T>(
-        ref TGen generator, Span<T> span, Storage<BodyContact2D> contacts)
-        where TGen : IContactGenerator<T, T>
+    public static void GenerateContacts<C, G, T>(C contacts, ref G generator, Span<T> span)
+        where C : IConsumer<BodyContact2D>
+        where G : IContactGenerator<T, T>
     {
         for (int i = 0; i < span.Length; i++)
         {
@@ -438,22 +437,15 @@ public class PhysicsWorld
             {
                 ref T o2 = ref span[j];
 
-                if (generator.Generate(ref o1, ref o2, out Contact2D contact))
-                {
-                    contacts.Add() = new BodyContact2D()
-                    {
-                        BodyIndex1 = i,
-                        BodyIndex2 = j,
-                        Contact = contact
-                    };
-                }
+                generator.Generate(ref o1, ref o2, new ContactToBodyConsumer<C>(contacts, i, j));
             }
         }
     }
 
-    public static void GenerateContacts<TGen, T1, T2>(
-        ref TGen generator, Span<T1> span1, Span<T2> span2, Storage<BodyContact2D> contacts)
-        where TGen : IContactGenerator<T1, T2>
+    public static void GenerateContacts<C, G, T1, T2>(
+        C contacts, ref G generator, Span<T1> span1, Span<T2> span2)
+        where C : IConsumer<BodyContact2D>
+        where G : IContactGenerator<T1, T2>
     {
         for (int i = 0; i < span1.Length; i++)
         {
@@ -463,16 +455,22 @@ public class PhysicsWorld
             {
                 ref T2 o2 = ref span2[j];
 
-                if (generator.Generate(ref o1, ref o2, out Contact2D contact))
-                {
-                    contacts.Add() = new BodyContact2D()
-                    {
-                        BodyIndex1 = i,
-                        BodyIndex2 = j,
-                        Contact = contact
-                    };
-                }
+                generator.Generate(ref o1, ref o2, new ContactToBodyConsumer<C>(contacts, i, j));
             }
+        }
+    }
+
+    struct ContactToBodyConsumer<C>(C Consumer, int Body1, int Body2) : IConsumer<Contact2D>
+        where C : IConsumer<BodyContact2D>
+    {
+        public void Accept(Contact2D contact)
+        {
+            Consumer.Accept(new BodyContact2D()
+            {
+                BodyIndex1 = Body1,
+                BodyIndex2 = Body2,
+                Contact = contact
+            });
         }
     }
 
@@ -492,7 +490,7 @@ public class PhysicsWorld
             where G : IContactGenerator<CircleBody, T>
             where T : IShapeId
         {
-            GetContacts<G, CircleBody, T>(output, ref origin, generator, GetStorage<T>().AsSpan());
+            GetContacts<Storage<ShapeLocation>, G, CircleBody, T>(output, ref origin, generator, GetStorage<T>().AsSpan());
         }
 
         Get<CircleToCircleContactGenerator, CircleBody>(new(false, IntersectionResult.Any, CollisionMask.None));
@@ -502,19 +500,24 @@ public class PhysicsWorld
         Get<CircleToShapeContactGenerator<FluidZone>, FluidZone>(new());
     }
 
-    private static void GetContacts<G, T1, T2>(
-        Storage<ShapeLocation> output, ref T1 origin, G generator, Span<T2> bodies)
+    private static void GetContacts<C, G, T1, T2>(
+        C consumer, ref T1 origin, G generator, Span<T2> bodies)
+        where C : IConsumer<ShapeLocation>
         where G : IContactGenerator<T1, T2>
         where T2 : IShapeId
     {
         for (int i = 0; i < bodies.Length; i++)
         {
             ref T2 body = ref bodies[i];
-            if (generator.Generate(ref origin, ref body, out Contact2D contact))
-            {
-                output.Add() = new ShapeLocation(T2.Kind, body.Id, contact);
-            }
+
+            generator.Generate(ref origin, ref body, new ContactToShapeConsumer<C>(consumer, T2.Kind, body.Id));
         }
+    }
+
+    struct ContactToShapeConsumer<C>(C Consumer, ShapeKind Kind, BodyId Id) : IConsumer<Contact2D>
+        where C : IConsumer<ShapeLocation>
+    {
+        public void Accept(Contact2D contact) => Consumer.Accept(new ShapeLocation(Kind, Id, contact));
     }
 
     #endregion

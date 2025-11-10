@@ -3,10 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Runtime.CompilerServices;
+using PhysicsEngine.Collision;
 
 namespace PhysicsEngine.Collections
 {
-    public class Storage<T>
+    public class Storage<T> : IConsumer<T>
     {
         private T[] _values;
         private int _count;
@@ -29,15 +30,11 @@ namespace PhysicsEngine.Collections
 
         public ref T this[int i] => ref Get(i);
 
-        public Span<T> AsSpan()
-        {
-            return _values.AsSpan(0, _count);
-        }
+        public Span<T> AsSpan() => _values.AsSpan(0, _count);
 
-        public void Add(T value)
-        {
-            Add() = value;
-        }
+        void IConsumer<T>.Accept(T value) => Add() = value;
+
+        public void Add(T value) => Add() = value;
 
         public ref T Add()
         {

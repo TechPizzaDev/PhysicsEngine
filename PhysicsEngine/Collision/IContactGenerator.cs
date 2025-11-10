@@ -2,5 +2,6 @@
 
 public interface IContactGenerator<T1, T2>
 {
-    bool Generate(ref T1 a, ref T2 b, out Contact2D contact);
+    void Generate<C>(ref T1 a, ref T2 b, C consumer)
+        where C : IConsumer<Contact2D>;
 }
