@@ -286,10 +286,12 @@ public partial class World
 
         float item_w = ImGui.CalcItemWidth();
         ImGuiStylePtr style = ImGui.GetStyle();
+        Vector2 lineOffset = new(0, style.FramePadding.Y);
 
         Vector2 pos = ImGui.GetCursorScreenPos();
-        Vector2 label_size = ImGui.CalcTextSize(label, true);
+        Vector2 label_size = ImGui.CalcTextSize(label, true) + lineOffset * 2;
 
+        ImGui.SetCursorScreenPos(pos + lineOffset);
         ImGui.InvisibleButton(label, new Vector2(item_w - style.FramePadding.X, label_size.Y), ImGuiButtonFlags.EnableNav);
         if (ImGui.IsItemActive() && ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
         {
@@ -309,6 +311,8 @@ public partial class World
 
         ImGui.SameLine(item_w + style.FramePadding.X * 3f);
         ImGui.Text(label);
+
+        ImGui.SetCursorScreenPos(pos + new Vector2(0, label_size.Y));
 
         if (ImGui.BeginPopup(popup_id))
         {
